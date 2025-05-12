@@ -22,4 +22,4 @@ dependencyResolutionManagement {
 rootProject.name = "PrototipoDataLayer"
 include(":app")
 include(":wear")
- 
+include(":uactivity")
