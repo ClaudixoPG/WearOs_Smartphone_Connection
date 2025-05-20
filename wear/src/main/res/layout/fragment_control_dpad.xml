@@ -1,0 +1,23 @@
+<androidx.wear.widget.BoxInsetLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <Button android:id="@+id/btn_up" android:text="↑"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal" />
+
+    <Button android:id="@+id/btn_down" android:text="↓"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal" />
+
+    <Button android:id="@+id/btn_left" android:text="←"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|start" />
+
+    <Button android:id="@+id/btn_right" android:text="→"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|end" />
+
+    <Button android:id="@+id/btn_action" android:text="Shoot"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="center" />
+</androidx.wear.widget.BoxInsetLayout>

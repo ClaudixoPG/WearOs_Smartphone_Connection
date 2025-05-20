@@ -8,37 +8,33 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresPermission
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.RemoteInput
+import androidx.fragment.app.FragmentActivity
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.*
+import com.randomadjective.prototipodatalayer.controls.ControlFragmentDpad
+import com.randomadjective.prototipodatalayer.controls.ControlFragmentForceBar
+import com.randomadjective.prototipodatalayer.controls.ControlFragmentJoystick
+import com.randomadjective.prototipodatalayer.controls.ControlFragmentTap
 import java.nio.charset.StandardCharsets
 
-class MainActivity : ComponentActivity(), MessageClient.OnMessageReceivedListener {
+class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListener {
 
-    private lateinit var textView: TextView
-    private lateinit var inputMessage: EditText
-    private lateinit var sendButton: Button
     private val path = "/mensaje"
     private val TAG = "Wear_Main"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        textView = findViewById(R.id.textViewWear)
-        inputMessage = findViewById(R.id.inputMessageWear)
-        sendButton = findViewById(R.id.buttonSendWear)
-
-        sendButton.setOnClickListener {
-            val mensaje = inputMessage.text.toString()
-            enviarMensajeAlTelefono(mensaje)
-        }
 
         // Crear canal de notificaciones
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -52,8 +48,39 @@ class MainActivity : ComponentActivity(), MessageClient.OnMessageReceivedListene
         }
     }
 
+    private fun showControl(fragment: androidx.fragment.app.Fragment) {
+        enableImmersiveMode()
+        //Print log message in console
+        Log.i(TAG, "Cambiando a fragmento: ${fragment.javaClass.simpleName}")
+
+        // Ocultar mensaje por defecto si está visible
+        val defaultMessage  = findViewById<TextView>(R.id.defaultMessage)
+        defaultMessage ?.visibility = View.GONE
+
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                android.R.animator.fade_in,
+                android.R.animator.fade_out
+            )
+            .replace(R.id.fragment_container, fragment)
+            .commit()
+    }
+
+    private fun enableImmersiveMode() {
+        window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                )
+    }
+
+
     override fun onResume() {
         super.onResume()
+        enableImmersiveMode()
         Wearable.getMessageClient(this).addListener(this)
     }
 
@@ -74,29 +101,22 @@ class MainActivity : ComponentActivity(), MessageClient.OnMessageReceivedListene
                     lanzarNotificacion(mensaje)
                 }
                 runOnUiThread {
-                    textView.text = "Recibido: $mensaje"
+                    // LogMessage in console
+                    Log.i(TAG, "Mensaje recibido: $mensaje")
+                    when (mensaje) {
+                        "control_1" -> showControl(ControlFragmentTap())
+                        "control_2" -> showControl(ControlFragmentDpad())
+                        "control_3" -> showControl(ControlFragmentJoystick())
+                        "control_4" -> showControl(ControlFragmentForceBar())
+                        // Agrega más casos si hay más controles
+                        else -> Log.w(TAG, "Mensaje recibido: $mensaje")
+                    }
                 }
             }
         }
     }
 
-    /*private fun lanzarNotificacion(mensaje: String) {
-        val intent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val notification = NotificationCompat.Builder(this, "wear_channel")
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Nuevo mensaje")
-            .setContentText(mensaje)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .build()
-
-        NotificationManagerCompat.from(this).notify(1, notification)
-    }*/
-
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun lanzarNotificacion(mensaje: String) {
         val notiMode = 2 // Cambia entre 1 (botón simple) o 2 (respuesta rápida)
 
@@ -124,7 +144,7 @@ class MainActivity : ComponentActivity(), MessageClient.OnMessageReceivedListene
                 )
         } else if (notiMode == 2) {
             // MODO 2: RemoteInput para respuesta rápida
-            val remoteInput = androidx.core.app.RemoteInput.Builder("respuesta")
+            val remoteInput = RemoteInput.Builder("respuesta")
                 .setLabel("Responder mensaje")
                 .build()
 
@@ -152,7 +172,6 @@ class MainActivity : ComponentActivity(), MessageClient.OnMessageReceivedListene
 
         NotificationManagerCompat.from(this).notify(1, builder.build())
     }
-
 
     private fun enviarMensajeAlTelefono(mensaje: String) {
         Thread {
