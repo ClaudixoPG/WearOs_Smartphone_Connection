@@ -78,7 +78,7 @@ class ControlFragmentForceBar : BaseControlFragment(R.layout.fragment_control_fo
 
                 MotionEvent.ACTION_UP -> {
                     cargando = false
-                    sendMessage("fuerza:${"%.2f".format(fuerza / 100f)}")
+                    enviarMensaje("fuerza:${"%.2f".format(fuerza / 100f)}")
                     handler.postDelayed(descargaRunnable, 500)
                 }
             }

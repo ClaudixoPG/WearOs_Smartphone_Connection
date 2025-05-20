@@ -31,11 +31,11 @@ import com.randomadjective.prototipodatalayer.base.BaseControlFragment
 class ControlFragmentDpad : BaseControlFragment(R.layout.fragment_control_dpad) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         // Setup botones
-        view.findViewById<Button>(R.id.btn_up).setOnClickListener { sendMessage("arriba") }
-        view.findViewById<Button>(R.id.btn_down).setOnClickListener { sendMessage("abajo") }
-        view.findViewById<Button>(R.id.btn_left).setOnClickListener { sendMessage("izquierda") }
-        view.findViewById<Button>(R.id.btn_right).setOnClickListener { sendMessage("derecha") }
-        view.findViewById<Button>(R.id.btn_action).setOnClickListener { sendMessage("Shoot") }
+        view.findViewById<Button>(R.id.btn_up).setOnClickListener { enviarMensaje("arriba") }
+        view.findViewById<Button>(R.id.btn_down).setOnClickListener { enviarMensaje("abajo") }
+        view.findViewById<Button>(R.id.btn_left).setOnClickListener { enviarMensaje("izquierda") }
+        view.findViewById<Button>(R.id.btn_right).setOnClickListener { enviarMensaje("derecha") }
+        view.findViewById<Button>(R.id.btn_action).setOnClickListener { enviarMensaje("Shoot") }
 
         // Agrega texto de retroalimentación
         val title = TextView(requireContext()).apply {

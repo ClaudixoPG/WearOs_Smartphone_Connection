@@ -141,7 +141,7 @@ class ControlFragmentJoystick : BaseControlFragment(R.layout.fragment_control_jo
                     val xNorm = ((x / w) - 0.5f) * 2
                     val yNorm = ((y / h) - 0.5f) * -2
                     val mensaje = "joystick:${"%.2f".format(xNorm)},${"%.2f".format(yNorm)}"
-                    sendMessage(mensaje)
+                    enviarMensaje(mensaje)
                 }
 
                 MotionEvent.ACTION_UP -> {
@@ -156,7 +156,7 @@ class ControlFragmentJoystick : BaseControlFragment(R.layout.fragment_control_jo
                     animX.start()
                     animY.start()
 
-                    sendMessage("joystick:0.00,0.00")
+                    enviarMensaje("joystick:0.00,0.00")
                 }
             }
             true
