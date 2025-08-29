@@ -35,7 +35,7 @@ class ControlFragmentTap : BaseControlFragment(R.layout.fragment_control_tap) {
             .start()
 
         view.setOnClickListener {
-            enviarMensaje("Shoot")
+            enviarMensaje("Tap")
         }
     }
 

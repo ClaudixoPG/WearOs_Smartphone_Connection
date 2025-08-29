@@ -43,9 +43,13 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
                 "Mensajes del Smartphone",
                 NotificationManager.IMPORTANCE_DEFAULT
             )
+
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
         }
+        //showControl(ControlFragmentJoystick())
+        //showControl(ControlFragmentTap())
+        showControl(ControlFragmentDpad())
     }
 
     private fun showControl(fragment: androidx.fragment.app.Fragment) {

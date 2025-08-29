@@ -4,5 +4,6 @@
         <item name="colorPrimaryDark">@android:color/black</item>
         <item name="colorAccent">@android:color/white</item>
         <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowSwipeToDismiss">false</item>
     </style>
 </resources>

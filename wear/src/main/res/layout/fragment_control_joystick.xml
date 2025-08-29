@@ -1,24 +1,30 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/joystick_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/selectableItemBackground"
-    android:paddingStart="32dp"
-    android:paddingEnd="32dp">
+    android:background="?android:attr/selectableItemBackground">
 
-    <!-- Visualización de zona activa -->
-    <View
-        android:id="@+id/joystick_zone"
-        android:layout_width="220dp"
-        android:layout_height="220dp"
-        android:layout_gravity="center"
-        android:background="@drawable/joystick_zone_background" />
-
-    <!-- Joystick central -->
-    <View
+    <!- Joystick central -->
+    <!--View
         android:id="@+id/stick"
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:layout_gravity="center"
         android:background="@drawable/stick_background" />
-</FrameLayout>
+</FrameLayout-->
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/joystick_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/circle_background"
+    android:clipToOutline="true">
+
+    <!-- Joystick central -->
+<View
+    android:id="@+id/stick"
+    android:layout_width="60dp"
+    android:layout_height="60dp"
+    android:layout_gravity="center"
+    android:background="@drawable/stick_background" />
+    </FrameLayout>
