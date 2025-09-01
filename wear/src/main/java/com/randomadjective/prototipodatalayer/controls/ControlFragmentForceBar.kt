@@ -20,8 +20,13 @@ class ControlFragmentForceBar : BaseControlFragment(R.layout.fragment_control_fo
     private lateinit var textoFuerza: TextView
     private val handler = Handler(Looper.getMainLooper())
 
-    private var fuerza = 0
+    private var fuerza = 0f  // ahora float
     private var cargando = false
+
+    // Variables para deltaTime
+    private var lastUpdateTime = System.currentTimeMillis()
+    private val incrementoPorSegundo = 40f   // velocidad de carga (0–100 por segundo)
+    private val decrementoPorSegundo = 20f   // velocidad de descarga (0–100 por segundo)
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -68,18 +73,18 @@ class ControlFragmentForceBar : BaseControlFragment(R.layout.fragment_control_fo
         // Interacción táctil
         view.setOnTouchListener { _, event ->
             when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    fuerza = 0
-                    barra.progress = 0
-                    textoFuerza.text = "0.00"
+                MotionEvent.ACTION_MOVE, MotionEvent.ACTION_DOWN -> {
                     cargando = true
-                    handler.postDelayed(cargaRunnable, 10)
+                    lastUpdateTime = System.currentTimeMillis()
+                    enviarMensaje("fuerza:${"%.2f".format(fuerza / 100f)}")
+                    handler.post(cargaRunnable)
                 }
 
                 MotionEvent.ACTION_UP -> {
                     cargando = false
-                    enviarMensaje("fuerza:${"%.2f".format(fuerza / 100f)}")
-                    handler.postDelayed(descargaRunnable, 500)
+                    lastUpdateTime = System.currentTimeMillis()
+                    enviarMensaje("fuerzaRelease:${"%.2f".format(fuerza / 100f)}")
+                    handler.post(descargaRunnable)
                 }
             }
             true
@@ -90,23 +95,38 @@ class ControlFragmentForceBar : BaseControlFragment(R.layout.fragment_control_fo
     private val cargaRunnable = object : Runnable {
         override fun run() {
             if (!cargando) return
-            if (fuerza < 100) {
-                fuerza++
-                barra.progress = fuerza
+
+            val currentTime = System.currentTimeMillis()
+            val deltaTime = (currentTime - lastUpdateTime) / 1000f // en segundos
+            lastUpdateTime = currentTime
+
+            if (fuerza < 100f) {
+                fuerza += incrementoPorSegundo * deltaTime
+                if (fuerza > 100f) fuerza = 100f
+                barra.progress = fuerza.toInt()
                 textoFuerza.text = "%.2f".format(fuerza / 100f)
-                handler.postDelayed(this, 10)
             }
+
+            handler.postDelayed(this, 16) // ~60 fps
         }
     }
 
     // Descarga lentamente cuando se suelta
     private val descargaRunnable = object : Runnable {
         override fun run() {
-            if (cargando || fuerza <= 0) return
-            fuerza--
-            barra.progress = fuerza
+            if (cargando || fuerza <= 0f) return
+
+            val currentTime = System.currentTimeMillis()
+            val deltaTime = (currentTime - lastUpdateTime) / 1000f // en segundos
+            lastUpdateTime = currentTime
+
+            fuerza -= decrementoPorSegundo * deltaTime
+            if (fuerza < 0f) fuerza = 0f
+
+            barra.progress = fuerza.toInt()
             textoFuerza.text = "%.2f".format(fuerza / 100f)
-            handler.postDelayed(this, 15)
+
+            handler.postDelayed(this, 16) // ~60 fps
         }
     }
 }
