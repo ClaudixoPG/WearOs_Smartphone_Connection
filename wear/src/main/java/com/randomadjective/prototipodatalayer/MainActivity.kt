@@ -25,6 +25,8 @@ import com.randomadjective.prototipodatalayer.controls.ControlFragmentDpad
 import com.randomadjective.prototipodatalayer.controls.ControlFragmentForceBar
 import com.randomadjective.prototipodatalayer.controls.ControlFragmentJoystick
 import com.randomadjective.prototipodatalayer.controls.ControlFragmentTap
+import com.randomadjective.prototipodatalayer.sensors.fragments.GyroscopeSensorFragment
+import com.randomadjective.prototipodatalayer.sensors.fragments.LocationSensorFragment
 import java.nio.charset.StandardCharsets
 
 class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListener {
@@ -47,7 +49,9 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
         }
-        showControl(ControlFragmentJoystick())
+        showControl(LocationSensorFragment())
+        //showControl(GyroscopeSensorFragment())
+        //showControl(ControlFragmentJoystick())
         //showControl(ControlFragmentTap())
         //showControl(ControlFragmentDpad())
     }
@@ -112,6 +116,8 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
                         "control_2" -> showControl(ControlFragmentDpad())
                         "control_3" -> showControl(ControlFragmentJoystick())
                         "control_4" -> showControl(ControlFragmentForceBar())
+                        "sensor_gyro" -> showControl(GyroscopeSensorFragment())
+                        "sensor_location" -> showControl(LocationSensorFragment())
                         // Agrega más casos si hay más controles
                         else -> Log.w(TAG, "Mensaje recibido: $mensaje")
                     }
