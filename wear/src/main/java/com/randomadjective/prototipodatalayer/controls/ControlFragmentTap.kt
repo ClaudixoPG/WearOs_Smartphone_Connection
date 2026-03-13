@@ -10,11 +10,11 @@ import com.randomadjective.prototipodatalayer.R
 import com.randomadjective.prototipodatalayer.base.BaseControlFragment
 
 class ControlFragmentTap : BaseControlFragment(R.layout.fragment_control_tap) {
-    /*override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        view.setOnClickListener {
-            enviarMensaje("Shoot")
-        }
-    }*/
+    // override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    // view.setOnClickListener {
+    // enviarMensaje("Shoot")
+    // }
+    // }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val title = TextView(requireContext()).apply {

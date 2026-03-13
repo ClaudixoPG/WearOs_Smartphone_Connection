@@ -156,7 +156,7 @@ class ControlFragmentJoystick : BaseControlFragment(R.layout.fragment_control_jo
                     animX.start()
                     animY.start()
 
-                    enviarMensaje("Joystick:0.00,0.00")
+                    enviarMensaje("JoystickRelease:0.00,0.00")
                 }
             }
             true

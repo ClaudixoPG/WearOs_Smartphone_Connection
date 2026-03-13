@@ -47,9 +47,9 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
         }
-        //showControl(ControlFragmentJoystick())
+        showControl(ControlFragmentJoystick())
         //showControl(ControlFragmentTap())
-        showControl(ControlFragmentDpad())
+        //showControl(ControlFragmentDpad())
     }
 
     private fun showControl(fragment: androidx.fragment.app.Fragment) {
