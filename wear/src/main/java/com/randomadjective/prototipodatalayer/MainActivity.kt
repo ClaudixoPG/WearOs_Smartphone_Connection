@@ -27,6 +27,7 @@ import com.randomadjective.prototipodatalayer.controls.ControlFragmentJoystick
 import com.randomadjective.prototipodatalayer.controls.ControlFragmentTap
 import com.randomadjective.prototipodatalayer.sensors.fragments.GyroscopeSensorFragment
 import com.randomadjective.prototipodatalayer.sensors.fragments.LocationSensorFragment
+import com.randomadjective.prototipodatalayer.sensors.fragments.HeartRateSensorFragment
 import java.nio.charset.StandardCharsets
 
 class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListener {
@@ -49,7 +50,8 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
         }
-        showControl(LocationSensorFragment())
+        showControl(HeartRateSensorFragment())
+        //showControl(LocationSensorFragment())
         //showControl(GyroscopeSensorFragment())
         //showControl(ControlFragmentJoystick())
         //showControl(ControlFragmentTap())
@@ -118,6 +120,7 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
                         "control_4" -> showControl(ControlFragmentForceBar())
                         "sensor_gyro" -> showControl(GyroscopeSensorFragment())
                         "sensor_location" -> showControl(LocationSensorFragment())
+                        "sensor_heart" -> showControl(HeartRateSensorFragment())
                         // Agrega más casos si hay más controles
                         else -> Log.w(TAG, "Mensaje recibido: $mensaje")
                     }

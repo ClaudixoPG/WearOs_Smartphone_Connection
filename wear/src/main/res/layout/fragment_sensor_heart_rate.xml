@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.wear.widget.BoxInsetLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/tvTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sensor: Heart Rate"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_gravity="center_horizontal"
+                android:paddingBottom="8dp" />
+
+            <Button
+                android:id="@+id/btnToggleViewMode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Vista: RAW" />
+
+            <TextView
+                android:id="@+id/tvPermission"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Permiso: desconocido"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:paddingTop="12dp" />
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Estado: INACTIVE"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:paddingTop="8dp" />
+
+            <TextView
+                android:id="@+id/tvBpm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BPM: 0.00"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:paddingTop="12dp" />
+
+            <TextView
+                android:id="@+id/tvSmoothedBpm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BPM suavizado: 0.00"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:paddingTop="6dp" />
+
+            <TextView
+                android:id="@+id/tvContactState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Contacto: Sin datos"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:paddingTop="8dp" />
+
+            <TextView
+                android:id="@+id/tvTimestamp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Última lectura: -"
+                android:textColor="@android:color/white"
+                android:textSize="12sp"
+                android:paddingTop="8dp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.wear.widget.BoxInsetLayout>
