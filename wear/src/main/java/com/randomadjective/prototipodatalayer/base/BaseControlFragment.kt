@@ -1,4 +1,4 @@
-package com.randomadjective.prototipodatalayer.base
+/*package com.randomadjective.prototipodatalayer.base
 
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -37,5 +37,16 @@ abstract class BaseControlFragment(layoutId: Int) : Fragment(layoutId) {
                 Log.e("Wear_Send", "Error al enviar mensaje: ${e.message}", e)
             }
         }.start()
+    }
+}*/
+
+package com.randomadjective.prototipodatalayer.base
+
+import androidx.fragment.app.Fragment
+
+abstract class BaseControlFragment(layoutId: Int) : Fragment(layoutId) {
+
+    protected fun enviarMensaje(mensaje: String) {
+        WearMessageSender.sendMessage(requireContext(), mensaje)
     }
 }

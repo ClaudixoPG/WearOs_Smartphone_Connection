@@ -50,11 +50,11 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
         }
-        showControl(HeartRateSensorFragment())
+        //showControl(HeartRateSensorFragment())
         //showControl(LocationSensorFragment())
         //showControl(GyroscopeSensorFragment())
         //showControl(ControlFragmentJoystick())
-        //showControl(ControlFragmentTap())
+        showControl(ControlFragmentTap())
         //showControl(ControlFragmentDpad())
     }
 

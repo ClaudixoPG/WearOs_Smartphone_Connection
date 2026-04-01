@@ -14,6 +14,7 @@ import com.randomadjective.prototipodatalayer.sensors.providers.GyroscopeSensorP
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.randomadjective.prototipodatalayer.base.WearMessageSender
 
 class GyroscopeSensorFragment : Fragment(R.layout.fragment_sensor_gyroscope) {
 
@@ -25,6 +26,8 @@ class GyroscopeSensorFragment : Fragment(R.layout.fragment_sensor_gyroscope) {
     private lateinit var tvMagnitude: TextView
     private lateinit var tvMovementLabel: TextView
     private lateinit var tvTimestamp: TextView
+    private var lastSentTime = 0L
+    private val sendIntervalMs = 50L
 
     private lateinit var gyroscopeProvider: GyroscopeSensorProvider
 
@@ -46,6 +49,17 @@ class GyroscopeSensorFragment : Fragment(R.layout.fragment_sensor_gyroscope) {
                 uiState = uiState.copy(status = status)
                 render()
             },
+            /*onReadingChanged = { x, y, z, magnitude, timestamp ->
+                uiState = uiState.copy(
+                    x = x,
+                    y = y,
+                    z = z,
+                    magnitude = magnitude,
+                    movementLabel = calculateMovementLabel(magnitude),
+                    lastUpdateTimestamp = timestamp
+                )
+                render()
+            }*/
             onReadingChanged = { x, y, z, magnitude, timestamp ->
                 uiState = uiState.copy(
                     x = x,
@@ -56,6 +70,24 @@ class GyroscopeSensorFragment : Fragment(R.layout.fragment_sensor_gyroscope) {
                     lastUpdateTimestamp = timestamp
                 )
                 render()
+
+                /*val message = String.format(
+                    Locale.US,
+                    "GyroRaw:%.3f,%.3f,%.3f",
+                    x, y, z
+                )
+                WearMessageSender.sendMessage(requireContext(), message)*/
+                val now = System.currentTimeMillis()
+                if (now - lastSentTime >= sendIntervalMs) {
+                    lastSentTime = now
+
+                    val message = String.format(
+                        Locale.US,
+                        "GyroRaw:%.3f,%.3f,%.3f",
+                        x, y, z
+                    )
+                    WearMessageSender.sendMessage(requireContext(), message)
+                }
             }
         )
 
