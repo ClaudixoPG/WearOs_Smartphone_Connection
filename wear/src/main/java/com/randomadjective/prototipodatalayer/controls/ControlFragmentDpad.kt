@@ -28,20 +28,20 @@ class ControlFragmentDpad : BaseControlFragment(R.layout.fragment_control_dpad) 
                         // Evita que el padre (ScrollView, etc.) intercepte el gesto
                         v.parent?.requestDisallowInterceptTouchEvent(true)
                         v.isPressed = true
-                        enviarMensaje("Dpad:$label")
+                        sendMessage("Dpad:$label")
                         true // Consumimos el evento para seguir recibiendo MOVE/UP
                     }
 
                     MotionEvent.ACTION_UP -> {
                         v.isPressed = false
-                        enviarMensaje("DpadRelease:$label")
+                        sendMessage("DpadRelease:$label")
                         v.performClick() // accesibilidad
                         true
                     }
 
                     MotionEvent.ACTION_CANCEL -> {
                         v.isPressed = false
-                        enviarMensaje("DpadRelease:$label")
+                        sendMessage("DpadRelease:$label")
                         true
                     }
 
@@ -50,10 +50,10 @@ class ControlFragmentDpad : BaseControlFragment(R.layout.fragment_control_dpad) 
                         val inside = event.x in 0f..v.width.toFloat() && event.y in 0f..v.height.toFloat()
                         if (!inside && v.isPressed) {
                             v.isPressed = false
-                            enviarMensaje("DpadRelease:$label")
+                            sendMessage("DpadRelease:$label")
                         } else if (inside && !v.isPressed) {
                             v.isPressed = true
-                            enviarMensaje("Dpad:$label")
+                            sendMessage("Dpad:$label")
                         }
                         true
                     }

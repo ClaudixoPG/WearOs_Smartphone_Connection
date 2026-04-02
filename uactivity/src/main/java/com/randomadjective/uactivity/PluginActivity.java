@@ -48,22 +48,6 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
         Wearable.getMessageClient(this).removeListener(this);
     }
 
-    /*public void sendMessageToSmartwatch(String message) {
-        new Thread(() -> {
-            var nodeListTask = Wearable.getNodeClient(this).getConnectedNodes();
-            List<Node> nodes = null;
-            try {
-                nodes = Tasks.await(nodeListTask);
-            } catch (ExecutionException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            for(var n : nodes)
-            {
-                Wearable.getMessageClient(this).sendMessage(n.getId(),path,message.getBytes(StandardCharsets.UTF_8));
-                Log.i(TAG, "Mensaje enviado a: " + n.getDisplayName());
-            }
-        }).start();
-    }*/
     public void sendMessageToSmartwatch(String message) {
         new Thread(() -> {
             Context context = UnityPlayer.currentActivity.getApplicationContext();
@@ -81,15 +65,24 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
         }).start();
     }
 
-
     @Override
     public void onMessageReceived(@NonNull MessageEvent messageEvent) {
-        //placeholder text for message event
         if (messageEvent.getPath().equals(path)) {
-            String message = new String(messageEvent.getData());
+            String message = new String(messageEvent.getData(), StandardCharsets.UTF_8);
             Log.i(TAG, "Mensaje recibido: " + message);
-            // Aquí puedes manejar el mensaje recibido
-            UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", message);
+
+            try {
+                if (TelemetryParser.isTelemetryPayload(message)) {
+                    String enriched = TelemetryParser.enrichOnPhone(message);
+                    String forwarded = TelemetryParser.markForwardToUnity(enriched);
+                    UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", forwarded);
+                } else {
+                    UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", message);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error procesando payload telemétrico", e);
+                UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", message);
+            }
         }
     }
 }

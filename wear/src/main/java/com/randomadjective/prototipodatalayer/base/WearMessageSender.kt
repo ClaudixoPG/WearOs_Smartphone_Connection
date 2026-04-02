@@ -13,6 +13,16 @@ object WearMessageSender {
     fun sendMessage(context: Context, message: String) {
         Thread {
             try {
+                // 🔹 Detectar tipo automáticamente
+                val (inputFamily, eventType) = classifyMessage(message)
+
+                // 🔹 Envolver con telemetría
+                val payload = TelemetryEnvelope.wrap(
+                    rawMessage = message,
+                    inputFamily = inputFamily,
+                    eventType = eventType
+                )
+
                 val nodes = Tasks.await(Wearable.getNodeClient(context).connectedNodes)
                 Log.i(TAG, "Nodos conectados: ${nodes.size}")
 
@@ -22,13 +32,38 @@ object WearMessageSender {
 
                 for (node in nodes) {
                     val task = Wearable.getMessageClient(context)
-                        .sendMessage(node.id, PATH, message.toByteArray())
+                        .sendMessage(node.id, PATH, payload.toByteArray())
                     Tasks.await(task)
-                    Log.i(TAG, "Mensaje enviado a ${node.displayName}: $message")
+                    Log.i(TAG, "Mensaje enviado a ${node.displayName}: $payload")
                 }
+
             } catch (e: Exception) {
                 Log.e(TAG, "Error al enviar mensaje: ${e.message}", e)
             }
         }.start()
+    }
+
+    private fun classifyMessage(message: String): Pair<String, String> {
+
+        return when {
+            message.startsWith("Tap") -> "Tap" to "input"
+
+            message.startsWith("Joystick") ||
+                    message.startsWith("JoystickRelease") -> "Joystick" to "input"
+
+            message.startsWith("Dpad") ||
+                    message.startsWith("DpadRelease") -> "Dpad" to "input"
+
+            message.startsWith("fuerza") ||
+                    message.startsWith("fuerzaRelease") -> "Force" to "input"
+
+            message.startsWith("Gyro") -> "Gyroscope" to "sensor"
+
+            message.startsWith("Location") -> "Location" to "sensor"
+
+            message.startsWith("HeartRate") -> "HeartRate" to "sensor"
+
+            else -> "Unknown" to "input"
+        }
     }
 }

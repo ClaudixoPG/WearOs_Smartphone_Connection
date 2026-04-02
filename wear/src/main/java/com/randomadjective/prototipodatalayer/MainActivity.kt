@@ -52,9 +52,9 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
         }
         //showControl(HeartRateSensorFragment())
         //showControl(LocationSensorFragment())
-        //showControl(GyroscopeSensorFragment())
+        showControl(GyroscopeSensorFragment())
         //showControl(ControlFragmentJoystick())
-        showControl(ControlFragmentTap())
+        //showControl(ControlFragmentTap())
         //showControl(ControlFragmentDpad())
     }
 

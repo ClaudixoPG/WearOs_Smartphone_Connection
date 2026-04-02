@@ -76,14 +76,14 @@ class ControlFragmentForceBar : BaseControlFragment(R.layout.fragment_control_fo
                 MotionEvent.ACTION_MOVE, MotionEvent.ACTION_DOWN -> {
                     cargando = true
                     lastUpdateTime = System.currentTimeMillis()
-                    enviarMensaje("fuerza:${"%.2f".format(fuerza / 100f)}")
+                    sendMessage("fuerza:${"%.2f".format(fuerza / 100f)}")
                     handler.post(cargaRunnable)
                 }
 
                 MotionEvent.ACTION_UP -> {
                     cargando = false
                     lastUpdateTime = System.currentTimeMillis()
-                    enviarMensaje("fuerzaRelease:${"%.2f".format(fuerza / 100f)}")
+                    sendMessage("fuerzaRelease:${"%.2f".format(fuerza / 100f)}")
                     handler.post(descargaRunnable)
                 }
             }
