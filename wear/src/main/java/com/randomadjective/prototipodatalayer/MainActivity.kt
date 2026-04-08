@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContentView(R.layout.activity_main)
 
         // Crear canal de notificaciones
@@ -52,9 +53,9 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
         }
         //showControl(HeartRateSensorFragment())
         //showControl(LocationSensorFragment())
-        showControl(GyroscopeSensorFragment())
+        //showControl(GyroscopeSensorFragment())
         //showControl(ControlFragmentJoystick())
-        //showControl(ControlFragmentTap())
+        showControl(ControlFragmentTap())
         //showControl(ControlFragmentDpad())
     }
 

@@ -69,20 +69,19 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
     public void onMessageReceived(@NonNull MessageEvent messageEvent) {
         if (messageEvent.getPath().equals(path)) {
             String message = new String(messageEvent.getData(), StandardCharsets.UTF_8);
-            Log.i(TAG, "Mensaje recibido: " + message);
 
             try {
                 if (TelemetryParser.isTelemetryPayload(message)) {
-                    String enriched = TelemetryParser.enrichOnPhone(message);
+                    String enriched = TelemetryParser.enrichOnPhone(this, message);
                     String forwarded = TelemetryParser.markForwardToUnity(enriched);
                     UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", forwarded);
                 } else {
                     UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", message);
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error procesando payload telemétrico", e);
                 UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", message);
             }
         }
+    }
     }
 }
