@@ -30,7 +30,8 @@ object TelemetryEnvelope {
         context: Context,
         rawMessage: String,
         inputFamily: String,
-        eventType: String
+        eventType: String,
+        latencySampled: Boolean
     ): String {
 
         val batteryIntent = context.registerReceiver(
@@ -49,12 +50,14 @@ object TelemetryEnvelope {
 
         return JSONObject().apply {
             put("schema_version", 1)
+            put("record_type", "input_event")
             put("event_type", eventType)
             put("event_id", nextEventId())
             put("session_id", sessionId)
 
             put("input_family", inputFamily)
             put("raw_message", rawMessage)
+            put("latency_sampled", latencySampled)
 
             put("send_ts_watch_ns", SystemClock.elapsedRealtimeNanos())
             put("smartwatch_model", watchModel)
@@ -62,9 +65,9 @@ object TelemetryEnvelope {
             put("battery_level_watch", batteryLevelWatch)
             put("temperature_watch_c", temperatureWatchC)
 
-            put("receive_ts_phone_native_ns", 0)
-            put("forward_ts_phone_native_ns", 0)
-            put("receive_ts_unity_ns", 0)
+            put("receive_ts_phone_native_ns", 0L)
+            put("forward_ts_phone_native_ns", 0L)
+            put("receive_ts_unity_ns", 0L)
 
             put("battery_level_phone", -1.0)
             put("temperature_phone_c", -1.0)
@@ -76,6 +79,14 @@ object TelemetryEnvelope {
             JSONObject(message).has("schema_version")
         } catch (e: Exception) {
             false
+        }
+    }
+
+    fun getRecordType(message: String): String? {
+        return try {
+            JSONObject(message).optString("record_type", "")
+        } catch (e: Exception) {
+            null
         }
     }
 }

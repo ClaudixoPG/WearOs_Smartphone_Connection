@@ -86,6 +86,22 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
         }).start();
     }
 
+    private void sendAckToNode(String nodeId, String message) {
+        new Thread(() -> {
+            try {
+                Context context = UnityPlayer.currentActivity.getApplicationContext();
+                Integer result = Tasks.await(
+                        Wearable.getMessageClient(context)
+                                .sendMessage(nodeId, PATH, message.getBytes(StandardCharsets.UTF_8))
+                );
+
+                Log.i(TAG, "ACK sent OK. requestId=" + result + ", nodeId=" + nodeId);
+            } catch (Exception e) {
+                Log.e(TAG, "Error sending ACK", e);
+            }
+        }).start();
+    }
+
     @Override
     public void onMessageReceived(@NonNull MessageEvent messageEvent) {
         try {
@@ -106,6 +122,11 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
             if (isTelemetry) {
                 String enriched = TelemetryParser.enrichOnPhone(this, message);
                 Log.i(TAG, "Enriched message: " + enriched);
+
+                if (TelemetryParser.shouldAck(enriched)) {
+                    String ackMessage = TelemetryParser.buildInputAck(enriched);
+                    sendAckToNode(messageEvent.getSourceNodeId(), ackMessage);
+                }
 
                 String forwarded = TelemetryParser.markForwardToUnity(enriched);
                 Log.i(TAG, "Forwarded message to Unity: " + forwarded);

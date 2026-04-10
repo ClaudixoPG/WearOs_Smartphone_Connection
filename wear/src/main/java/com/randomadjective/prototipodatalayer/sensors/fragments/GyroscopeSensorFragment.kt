@@ -49,17 +49,6 @@ class GyroscopeSensorFragment : Fragment(R.layout.fragment_sensor_gyroscope) {
                 uiState = uiState.copy(status = status)
                 render()
             },
-            /*onReadingChanged = { x, y, z, magnitude, timestamp ->
-                uiState = uiState.copy(
-                    x = x,
-                    y = y,
-                    z = z,
-                    magnitude = magnitude,
-                    movementLabel = calculateMovementLabel(magnitude),
-                    lastUpdateTimestamp = timestamp
-                )
-                render()
-            }*/
             onReadingChanged = { x, y, z, magnitude, timestamp ->
                 uiState = uiState.copy(
                     x = x,
@@ -71,12 +60,6 @@ class GyroscopeSensorFragment : Fragment(R.layout.fragment_sensor_gyroscope) {
                 )
                 render()
 
-                /*val message = String.format(
-                    Locale.US,
-                    "GyroRaw:%.3f,%.3f,%.3f",
-                    x, y, z
-                )
-                WearMessageSender.sendMessage(requireContext(), message)*/
                 val now = System.currentTimeMillis()
                 if (now - lastSentTime >= sendIntervalMs) {
                     lastSentTime = now

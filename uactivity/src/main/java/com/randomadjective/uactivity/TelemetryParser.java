@@ -33,6 +33,41 @@ public class TelemetryParser {
         }
     }
 
+    public static boolean shouldAck(String message) {
+        try {
+            JSONObject json = new JSONObject(message);
+            String recordType = json.optString("record_type", "");
+            boolean latencySampled = json.optBoolean("latency_sampled", false);
+
+            return "input_event".equals(recordType) && latencySampled;
+        } catch (Exception e) {
+            Log.w(TAG, "shouldAck() failed", e);
+            return false;
+        }
+    }
+
+    public static String buildInputAck(String message) {
+        try {
+            JSONObject inputJson = new JSONObject(message);
+
+            JSONObject ack = new JSONObject();
+            ack.put("schema_version", 1);
+            ack.put("record_type", "input_ack");
+            ack.put("event_type", "ack");
+            ack.put("event_id", inputJson.optString("event_id", ""));
+            ack.put("session_id", inputJson.optString("session_id", ""));
+            ack.put("input_family", inputJson.optString("input_family", ""));
+            ack.put("raw_message", inputJson.optString("raw_message", ""));
+            ack.put("send_ts_watch_ns", inputJson.optLong("send_ts_watch_ns", 0L));
+            ack.put("ack_ts_phone_native_ns", SystemClock.elapsedRealtimeNanos());
+
+            return ack.toString();
+        } catch (Exception e) {
+            Log.e(TAG, "buildInputAck() failed", e);
+            return "";
+        }
+    }
+
     public static String enrichOnPhone(Context context, String message) {
         try {
             JSONObject json = new JSONObject(message);
