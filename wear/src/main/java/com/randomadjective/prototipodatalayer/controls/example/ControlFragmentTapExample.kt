@@ -1,4 +1,4 @@
-package com.randomadjective.prototipodatalayer.controls
+package com.randomadjective.prototipodatalayer.controls.example
 
 import android.graphics.Color
 import android.os.Bundle
@@ -9,16 +9,10 @@ import android.widget.TextView
 import com.randomadjective.prototipodatalayer.R
 import com.randomadjective.prototipodatalayer.base.BaseControlFragment
 
-class ControlFragmentTap : BaseControlFragment(R.layout.fragment_control_tap) {
-    // override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-    // view.setOnClickListener {
-    // enviarMensaje("Shoot")
-    // }
-    // }
-
+class ControlFragmentTapExample : BaseControlFragment(R.layout.fragment_example_control_tap) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val title = TextView(requireContext()).apply {
-            text = "Control 1: Tap"
+            text = "Control 1: Tap Example"
             textSize = 14f
             setTextColor(Color.WHITE)
             alpha = 0f
@@ -27,7 +21,6 @@ class ControlFragmentTap : BaseControlFragment(R.layout.fragment_control_tap) {
 
         (view as ViewGroup).addView(title)
 
-        // Fade-in animation
         title.animate()
             .alpha(1f)
             .setDuration(500)
@@ -38,6 +31,4 @@ class ControlFragmentTap : BaseControlFragment(R.layout.fragment_control_tap) {
             sendMessage("Tap")
         }
     }
-
-
 }

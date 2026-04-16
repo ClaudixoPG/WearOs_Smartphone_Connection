@@ -1,4 +1,4 @@
-package com.randomadjective.prototipodatalayer.sensors.fragments
+package com.randomadjective.prototipodatalayer.sensors.fragments.gameplay
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -19,7 +19,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class LocationSensorFragment : Fragment(R.layout.fragment_sensor_location) {
+class LocationSensorFragmentGameplay : Fragment(R.layout.fragment_gameplay_sensor_location) {
 
     private lateinit var btnToggleViewMode: Button
     private lateinit var tvPermission: TextView

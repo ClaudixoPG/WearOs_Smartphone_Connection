@@ -1,4 +1,4 @@
-package com.randomadjective.prototipodatalayer.controls
+package com.randomadjective.prototipodatalayer.controls.example
 
 import android.annotation.SuppressLint
 import android.graphics.Color
@@ -15,7 +15,7 @@ import com.randomadjective.prototipodatalayer.R
 import com.randomadjective.prototipodatalayer.base.BaseControlFragment
 import java.util.Locale
 
-class ControlFragmentHold : BaseControlFragment(R.layout.fragment_control_force_bar) {
+class ControlFragmentHoldExample : BaseControlFragment(R.layout.fragment_example_control_hold) {
 
     private lateinit var barra: ProgressBar
     private lateinit var textoHold: TextView
@@ -45,7 +45,7 @@ class ControlFragmentHold : BaseControlFragment(R.layout.fragment_control_force_
         (view as ViewGroup).addView(textoHold)
 
         val titulo = TextView(requireContext()).apply {
-            text = "Control 4: Hold"
+            text = "Control 4: Hold Example"
             textSize = 14f
             setTextColor(Color.WHITE)
             alpha = 0f
@@ -83,10 +83,7 @@ class ControlFragmentHold : BaseControlFragment(R.layout.fragment_control_force_
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     charging = false
                     lastUpdateTime = System.currentTimeMillis()
-
-                    // Release siempre inmediato
                     sendHoldMessageImmediate(0f)
-
                     handler.removeCallbacks(cargaRunnable)
                     handler.post(descargaRunnable)
                 }
@@ -110,7 +107,6 @@ class ControlFragmentHold : BaseControlFragment(R.layout.fragment_control_force_
 
             updateUi()
             sendHoldMessage(holdValue100 / 100f)
-
             handler.postDelayed(this, 16L)
         }
     }
@@ -127,7 +123,6 @@ class ControlFragmentHold : BaseControlFragment(R.layout.fragment_control_force_
             if (holdValue100 < 0f) holdValue100 = 0f
 
             updateUi()
-
             handler.postDelayed(this, 16L)
         }
     }
@@ -140,7 +135,6 @@ class ControlFragmentHold : BaseControlFragment(R.layout.fragment_control_force_
     private fun sendHoldMessage(value01: Float) {
         val now = System.currentTimeMillis()
         if (now - lastSentTime < sendIntervalMs) return
-
         lastSentTime = now
         sendHoldMessageImmediate(value01)
     }

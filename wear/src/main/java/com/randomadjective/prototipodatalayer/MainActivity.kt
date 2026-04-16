@@ -71,8 +71,7 @@ class MainActivity : AppCompatActivity(),
     private fun showModeMenu() {
         enableImmersiveMode()
 
-        val defaultMessage = findViewById<TextView>(R.id.defaultMessage)
-        defaultMessage?.visibility = View.GONE
+        findViewById<TextView>(R.id.defaultMessage)?.visibility = View.GONE
 
         supportFragmentManager.beginTransaction()
             .setCustomAnimations(
@@ -84,11 +83,6 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun navigateToMode(mode: WearMode, addToBackStack: Boolean) {
-        val current = supportFragmentManager.findFragmentById(R.id.fragment_container)
-        if (current?.javaClass == WearModeFactory.create(mode).javaClass) {
-            return
-        }
-
         val fragment = WearModeFactory.create(mode)
         showFragment(fragment, mode.route, addToBackStack)
     }
@@ -96,8 +90,7 @@ class MainActivity : AppCompatActivity(),
     private fun showFragment(fragment: Fragment, backStackName: String?, addToBackStack: Boolean) {
         enableImmersiveMode()
 
-        val defaultMessage = findViewById<TextView>(R.id.defaultMessage)
-        defaultMessage?.visibility = View.GONE
+        findViewById<TextView>(R.id.defaultMessage)?.visibility = View.GONE
 
         val tx = supportFragmentManager.beginTransaction()
             .setCustomAnimations(
@@ -129,9 +122,7 @@ class MainActivity : AppCompatActivity(),
             when (keyCode) {
                 KeyEvent.KEYCODE_STEM_1,
                 KeyEvent.KEYCODE_STEM_2,
-                KeyEvent.KEYCODE_STEM_3 -> {
-                    return handlePhysicalBack()
-                }
+                KeyEvent.KEYCODE_STEM_3 -> return handlePhysicalBack()
             }
         }
         return super.onKeyDown(keyCode, event)
@@ -198,7 +189,7 @@ class MainActivity : AppCompatActivity(),
                         pendingIntent
                     ).build()
                 )
-        } else if (notiMode == 2) {
+        } else {
             val remoteInput = RemoteInput.Builder("respuesta")
                 .setLabel("Responder mensaje")
                 .build()

@@ -9,64 +9,41 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:gravity="center_horizontal"
         android:padding="12dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Select mode"
+            android:text="Examples"
             android:textColor="@android:color/white"
-            android:textSize="18sp"
             android:textStyle="bold"
-            android:layout_marginBottom="10dp" />
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
 
-        <Button
-            android:id="@+id/btnTap"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Tap" />
+        <Button android:id="@+id/btnTapExample" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Tap Example" />
+        <Button android:id="@+id/btnDpadExample" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="D-Pad Example" android:layout_marginTop="6dp" />
+        <Button android:id="@+id/btnJoystickExample" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Joystick Example" android:layout_marginTop="6dp" />
+        <Button android:id="@+id/btnHoldExample" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Hold Example" android:layout_marginTop="6dp" />
+        <Button android:id="@+id/btnGyroExample" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Gyroscope Example" android:layout_marginTop="6dp" />
+        <Button android:id="@+id/btnLocationExample" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Location Example" android:layout_marginTop="6dp" />
+        <Button android:id="@+id/btnHeartExample" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Heart Rate Example" android:layout_marginTop="6dp" />
 
-        <Button
-            android:id="@+id/btnDpad"
-            android:layout_width="match_parent"
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="D-Pad"
-            android:layout_marginTop="6dp" />
+            android:text="Gameplay"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp" />
 
-        <Button
-            android:id="@+id/btnJoystick"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Joystick"
-            android:layout_marginTop="6dp" />
-
-        <Button
-            android:id="@+id/btnHold"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Hold"
-            android:layout_marginTop="6dp" />
-
-        <Button
-            android:id="@+id/btnGyro"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Gyroscope"
-            android:layout_marginTop="6dp" />
-
-        <Button
-            android:id="@+id/btnLocation"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Location"
-            android:layout_marginTop="6dp" />
-
-        <Button
-            android:id="@+id/btnHeart"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Heart Rate"
-            android:layout_marginTop="6dp" />
+        <Button android:id="@+id/btnTapGameplay" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Tap Gameplay" />
+        <Button android:id="@+id/btnDpadGameplay" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="D-Pad Gameplay" android:layout_marginTop="6dp" />
+        <Button android:id="@+id/btnJoystickGameplay" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Joystick Gameplay" android:layout_marginTop="6dp" />
+        <Button android:id="@+id/btnHoldGameplay" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Hold Gameplay" android:layout_marginTop="6dp" />
+        <Button android:id="@+id/btnGyroGameplay" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Gyroscope Gameplay" android:layout_marginTop="6dp" />
+        <Button android:id="@+id/btnLocationGameplay" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Location Gameplay" android:layout_marginTop="6dp" />
+        <Button android:id="@+id/btnHeartGameplay" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Heart Rate Gameplay" android:layout_marginTop="6dp" />
     </LinearLayout>
 </ScrollView>

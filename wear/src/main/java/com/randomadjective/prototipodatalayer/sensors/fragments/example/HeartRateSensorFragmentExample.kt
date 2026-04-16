@@ -1,4 +1,4 @@
-package com.randomadjective.prototipodatalayer.sensors.fragments
+package com.randomadjective.prototipodatalayer.sensors.fragments.example
 
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -19,7 +19,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class HeartRateSensorFragment : Fragment(R.layout.fragment_sensor_heart_rate) {
+class HeartRateSensorFragmentExample : Fragment(R.layout.fragment_example_sensor_heart_rate) {
 
     private lateinit var btnToggleViewMode: Button
     private lateinit var tvPermission: TextView

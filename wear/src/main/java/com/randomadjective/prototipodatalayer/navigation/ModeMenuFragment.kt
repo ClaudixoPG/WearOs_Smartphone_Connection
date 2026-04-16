@@ -23,32 +23,48 @@ class ModeMenuFragment : Fragment(R.layout.fragment_mode_menu) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        view.findViewById<Button>(R.id.btnTap).setOnClickListener {
-            listener?.onModeSelected(WearMode.TAP)
+        view.findViewById<Button>(R.id.btnTapExample).setOnClickListener {
+            listener?.onModeSelected(WearMode.TAP_EXAMPLE)
+        }
+        view.findViewById<Button>(R.id.btnDpadExample).setOnClickListener {
+            listener?.onModeSelected(WearMode.DPAD_EXAMPLE)
+        }
+        view.findViewById<Button>(R.id.btnJoystickExample).setOnClickListener {
+            listener?.onModeSelected(WearMode.JOYSTICK_EXAMPLE)
+        }
+        view.findViewById<Button>(R.id.btnHoldExample).setOnClickListener {
+            listener?.onModeSelected(WearMode.HOLD_EXAMPLE)
+        }
+        view.findViewById<Button>(R.id.btnGyroExample).setOnClickListener {
+            listener?.onModeSelected(WearMode.GYRO_EXAMPLE)
+        }
+        view.findViewById<Button>(R.id.btnLocationExample).setOnClickListener {
+            listener?.onModeSelected(WearMode.LOCATION_EXAMPLE)
+        }
+        view.findViewById<Button>(R.id.btnHeartExample).setOnClickListener {
+            listener?.onModeSelected(WearMode.HEART_EXAMPLE)
         }
 
-        view.findViewById<Button>(R.id.btnDpad).setOnClickListener {
-            listener?.onModeSelected(WearMode.DPAD)
+        view.findViewById<Button>(R.id.btnTapGameplay).setOnClickListener {
+            listener?.onModeSelected(WearMode.TAP_GAMEPLAY)
         }
-
-        view.findViewById<Button>(R.id.btnJoystick).setOnClickListener {
-            listener?.onModeSelected(WearMode.JOYSTICK)
+        view.findViewById<Button>(R.id.btnDpadGameplay).setOnClickListener {
+            listener?.onModeSelected(WearMode.DPAD_GAMEPLAY)
         }
-
-        view.findViewById<Button>(R.id.btnHold).setOnClickListener {
-            listener?.onModeSelected(WearMode.HOLD)
+        view.findViewById<Button>(R.id.btnJoystickGameplay).setOnClickListener {
+            listener?.onModeSelected(WearMode.JOYSTICK_GAMEPLAY)
         }
-
-        view.findViewById<Button>(R.id.btnGyro).setOnClickListener {
-            listener?.onModeSelected(WearMode.GYRO)
+        view.findViewById<Button>(R.id.btnHoldGameplay).setOnClickListener {
+            listener?.onModeSelected(WearMode.HOLD_GAMEPLAY)
         }
-
-        view.findViewById<Button>(R.id.btnLocation).setOnClickListener {
-            listener?.onModeSelected(WearMode.LOCATION)
+        view.findViewById<Button>(R.id.btnGyroGameplay).setOnClickListener {
+            listener?.onModeSelected(WearMode.GYRO_GAMEPLAY)
         }
-
-        view.findViewById<Button>(R.id.btnHeart).setOnClickListener {
-            listener?.onModeSelected(WearMode.HEART)
+        view.findViewById<Button>(R.id.btnLocationGameplay).setOnClickListener {
+            listener?.onModeSelected(WearMode.LOCATION_GAMEPLAY)
+        }
+        view.findViewById<Button>(R.id.btnHeartGameplay).setOnClickListener {
+            listener?.onModeSelected(WearMode.HEART_GAMEPLAY)
         }
     }
 }

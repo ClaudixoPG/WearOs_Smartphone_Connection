@@ -1,4 +1,4 @@
-package com.randomadjective.prototipodatalayer.controls
+package com.randomadjective.prototipodatalayer.controls.example
 
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
@@ -15,7 +15,7 @@ import com.randomadjective.prototipodatalayer.R
 import com.randomadjective.prototipodatalayer.base.BaseControlFragment
 import java.util.Locale
 
-class ControlFragmentJoystick : BaseControlFragment(R.layout.fragment_control_joystick) {
+class ControlFragmentJoystickExample : BaseControlFragment(R.layout.fragment_example_control_joystick) {
 
     private var lastSentTime = 0L
     private val sendIntervalMs = 50L
@@ -26,7 +26,7 @@ class ControlFragmentJoystick : BaseControlFragment(R.layout.fragment_control_jo
         val container = view.findViewById<FrameLayout>(R.id.joystick_container)
 
         val title = TextView(requireContext()).apply {
-            text = "Control 3: Joystick"
+            text = "Control 3: Joystick Example"
             textSize = 14f
             setTextColor(Color.WHITE)
             alpha = 0f
@@ -45,9 +45,7 @@ class ControlFragmentJoystick : BaseControlFragment(R.layout.fragment_control_jo
                     .alpha(0f)
                     .setDuration(300)
                     .setStartDelay(1000)
-                    .withEndAction {
-                        (view as ViewGroup).removeView(title)
-                    }
+                    .withEndAction { (view as ViewGroup).removeView(title) }
                     .start()
             }
             .start()
@@ -87,7 +85,6 @@ class ControlFragmentJoystick : BaseControlFragment(R.layout.fragment_control_jo
                     animX.start()
                     animY.start()
 
-                    // Release siempre inmediato
                     sendMessage("JoystickRelease:0.00,0.00")
                 }
             }

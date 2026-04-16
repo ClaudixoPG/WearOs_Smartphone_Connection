@@ -1,4 +1,4 @@
-package com.randomadjective.prototipodatalayer.sensors.fragments
+package com.randomadjective.prototipodatalayer.sensors.fragments.gameplay
 
 import android.graphics.Color
 import android.os.Bundle
@@ -16,7 +16,7 @@ import java.util.Date
 import java.util.Locale
 import com.randomadjective.prototipodatalayer.base.WearMessageSender
 
-class GyroscopeSensorFragment : Fragment(R.layout.fragment_sensor_gyroscope) {
+class GyroscopeSensorFragmentGameplay : Fragment(R.layout.fragment_gameplay_sensor_gyroscope) {
 
     private lateinit var btnToggleViewMode: Button
     private lateinit var tvStatus: TextView

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/dpad_gameplay_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    android:padding="12dp">
+
+    <GridLayout
+        android:id="@+id/button_grid"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:alignmentMode="alignMargins"
+        android:columnCount="2"
+        android:rowCount="2"
+        android:useDefaultMargins="true">
+
+        <ImageButton
+            android:id="@+id/btn_red"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_gravity="fill"
+            android:background="@android:color/transparent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/button_red_selector"
+            android:contentDescription="Red Button"
+            android:adjustViewBounds="true"
+            android:padding="6dp" />
+
+        <ImageButton
+            android:id="@+id/btn_blue"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_gravity="fill"
+            android:background="@android:color/transparent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/button_blue_selector"
+            android:contentDescription="Blue Button"
+            android:adjustViewBounds="true"
+            android:padding="6dp" />
+
+        <ImageButton
+            android:id="@+id/btn_green"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_gravity="fill"
+            android:background="@android:color/transparent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/button_green_selector"
+            android:contentDescription="Green Button"
+            android:adjustViewBounds="true"
+            android:padding="6dp" />
+
+        <ImageButton
+            android:id="@+id/btn_yellow"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_gravity="fill"
+            android:background="@android:color/transparent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/button_yellow_selector"
+            android:contentDescription="Yellow Button"
+            android:adjustViewBounds="true"
+            android:padding="6dp" />
+    </GridLayout>
+
+</FrameLayout>
