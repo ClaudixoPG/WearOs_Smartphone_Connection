@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.View
 import android.widget.TextView
 import androidx.annotation.RequiresPermission
@@ -14,21 +15,20 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.RemoteInput
+import androidx.fragment.app.Fragment
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
 import com.randomadjective.prototipodatalayer.base.TelemetryEnvelope
 import com.randomadjective.prototipodatalayer.base.WearMessageSender
-import com.randomadjective.prototipodatalayer.controls.ControlFragmentDpad
-import com.randomadjective.prototipodatalayer.controls.ControlFragmentHold
-import com.randomadjective.prototipodatalayer.controls.ControlFragmentJoystick
-import com.randomadjective.prototipodatalayer.controls.ControlFragmentTap
-import com.randomadjective.prototipodatalayer.sensors.fragments.GyroscopeSensorFragment
-import com.randomadjective.prototipodatalayer.sensors.fragments.HeartRateSensorFragment
-import com.randomadjective.prototipodatalayer.sensors.fragments.LocationSensorFragment
+import com.randomadjective.prototipodatalayer.navigation.ModeMenuFragment
+import com.randomadjective.prototipodatalayer.navigation.WearMode
+import com.randomadjective.prototipodatalayer.navigation.WearModeFactory
 import java.nio.charset.StandardCharsets
 
-class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListener {
+class MainActivity : AppCompatActivity(),
+    MessageClient.OnMessageReceivedListener,
+    ModeMenuFragment.Listener {
 
     private val path = "/mensaje"
 
@@ -48,10 +48,27 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
             notificationManager.createNotificationChannel(channel)
         }
 
-        showControl(ControlFragmentTap())
+        if (savedInstanceState == null) {
+            showModeMenu()
+        }
     }
 
-    private fun showControl(fragment: androidx.fragment.app.Fragment) {
+    override fun onResume() {
+        super.onResume()
+        enableImmersiveMode()
+        Wearable.getMessageClient(this).addListener(this)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Wearable.getMessageClient(this).removeListener(this)
+    }
+
+    override fun onModeSelected(mode: WearMode) {
+        navigateToMode(mode, addToBackStack = true)
+    }
+
+    private fun showModeMenu() {
         enableImmersiveMode()
 
         val defaultMessage = findViewById<TextView>(R.id.defaultMessage)
@@ -62,8 +79,38 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
                 android.R.animator.fade_in,
                 android.R.animator.fade_out
             )
-            .replace(R.id.fragment_container, fragment)
+            .replace(R.id.fragment_container, ModeMenuFragment())
             .commit()
+    }
+
+    private fun navigateToMode(mode: WearMode, addToBackStack: Boolean) {
+        val current = supportFragmentManager.findFragmentById(R.id.fragment_container)
+        if (current?.javaClass == WearModeFactory.create(mode).javaClass) {
+            return
+        }
+
+        val fragment = WearModeFactory.create(mode)
+        showFragment(fragment, mode.route, addToBackStack)
+    }
+
+    private fun showFragment(fragment: Fragment, backStackName: String?, addToBackStack: Boolean) {
+        enableImmersiveMode()
+
+        val defaultMessage = findViewById<TextView>(R.id.defaultMessage)
+        defaultMessage?.visibility = View.GONE
+
+        val tx = supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                android.R.animator.fade_in,
+                android.R.animator.fade_out
+            )
+            .replace(R.id.fragment_container, fragment)
+
+        if (addToBackStack && backStackName != null) {
+            tx.addToBackStack(backStackName)
+        }
+
+        tx.commit()
     }
 
     private fun enableImmersiveMode() {
@@ -77,15 +124,26 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
                 )
     }
 
-    override fun onResume() {
-        super.onResume()
-        enableImmersiveMode()
-        Wearable.getMessageClient(this).addListener(this)
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (event?.repeatCount == 0) {
+            when (keyCode) {
+                KeyEvent.KEYCODE_STEM_1,
+                KeyEvent.KEYCODE_STEM_2,
+                KeyEvent.KEYCODE_STEM_3 -> {
+                    return handlePhysicalBack()
+                }
+            }
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
-    override fun onPause() {
-        super.onPause()
-        Wearable.getMessageClient(this).removeListener(this)
+    private fun handlePhysicalBack(): Boolean {
+        return if (supportFragmentManager.backStackEntryCount > 0) {
+            supportFragmentManager.popBackStack()
+            true
+        } else {
+            false
+        }
     }
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
@@ -108,14 +166,9 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
             }
 
             runOnUiThread {
-                when (mensaje) {
-                    "control_1" -> showControl(ControlFragmentTap())
-                    "control_2" -> showControl(ControlFragmentDpad())
-                    "control_3" -> showControl(ControlFragmentJoystick())
-                    "control_4" -> showControl(ControlFragmentHold())
-                    "sensor_gyro" -> showControl(GyroscopeSensorFragment())
-                    "sensor_location" -> showControl(LocationSensorFragment())
-                    "sensor_heart" -> showControl(HeartRateSensorFragment())
+                val mode = WearMode.fromRoute(mensaje)
+                if (mode != null) {
+                    navigateToMode(mode, addToBackStack = true)
                 }
             }
         }
