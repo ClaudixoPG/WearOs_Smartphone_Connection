@@ -7,7 +7,6 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.TextView
 import androidx.annotation.RequiresPermission
@@ -21,18 +20,17 @@ import com.google.android.gms.wearable.Wearable
 import com.randomadjective.prototipodatalayer.base.TelemetryEnvelope
 import com.randomadjective.prototipodatalayer.base.WearMessageSender
 import com.randomadjective.prototipodatalayer.controls.ControlFragmentDpad
-import com.randomadjective.prototipodatalayer.controls.ControlFragmentForceBar
+import com.randomadjective.prototipodatalayer.controls.ControlFragmentHold
 import com.randomadjective.prototipodatalayer.controls.ControlFragmentJoystick
 import com.randomadjective.prototipodatalayer.controls.ControlFragmentTap
 import com.randomadjective.prototipodatalayer.sensors.fragments.GyroscopeSensorFragment
-import com.randomadjective.prototipodatalayer.sensors.fragments.LocationSensorFragment
 import com.randomadjective.prototipodatalayer.sensors.fragments.HeartRateSensorFragment
+import com.randomadjective.prototipodatalayer.sensors.fragments.LocationSensorFragment
 import java.nio.charset.StandardCharsets
 
 class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListener {
 
     private val path = "/mensaje"
-    private val TAG = "Wear_Main"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +53,6 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
 
     private fun showControl(fragment: androidx.fragment.app.Fragment) {
         enableImmersiveMode()
-        Log.i(TAG, "Cambiando a fragmento: ${fragment.javaClass.simpleName}")
 
         val defaultMessage = findViewById<TextView>(R.id.defaultMessage)
         defaultMessage?.visibility = View.GONE
@@ -93,36 +90,32 @@ class MainActivity : AppCompatActivity(), MessageClient.OnMessageReceivedListene
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override fun onMessageReceived(event: MessageEvent) {
-        if (event.path == path) {
-            val mensaje = String(event.data, StandardCharsets.UTF_8)
-            Log.i(TAG, "Mensaje recibido: $mensaje")
+        if (event.path != path) return
 
-            if (TelemetryEnvelope.isJson(mensaje)) {
-                val recordType = TelemetryEnvelope.getRecordType(mensaje)
-                if (recordType == "input_ack") {
-                    val handled = WearMessageSender.handleIncomingAck(this, mensaje)
-                    if (handled) {
-                        return
-                    }
-                }
+        val mensaje = String(event.data, StandardCharsets.UTF_8)
+
+        if (TelemetryEnvelope.isJson(mensaje)) {
+            val recordType = TelemetryEnvelope.getRecordType(mensaje)
+            if (recordType == "input_ack") {
+                val handled = WearMessageSender.handleIncomingAck(this, mensaje)
+                if (handled) return
+            }
+        }
+
+        Wearable.getNodeClient(this).localNode.addOnSuccessListener { localNode ->
+            if (event.sourceNodeId != localNode.id) {
+                lanzarNotificacion(mensaje)
             }
 
-            Wearable.getNodeClient(this).localNode.addOnSuccessListener { localNode ->
-                if (event.sourceNodeId != localNode.id) {
-                    lanzarNotificacion(mensaje)
-                }
-                runOnUiThread {
-                    Log.i(TAG, "Mensaje recibido: $mensaje")
-                    when (mensaje) {
-                        "control_1" -> showControl(ControlFragmentTap())
-                        "control_2" -> showControl(ControlFragmentDpad())
-                        "control_3" -> showControl(ControlFragmentJoystick())
-                        "control_4" -> showControl(ControlFragmentForceBar())
-                        "sensor_gyro" -> showControl(GyroscopeSensorFragment())
-                        "sensor_location" -> showControl(LocationSensorFragment())
-                        "sensor_heart" -> showControl(HeartRateSensorFragment())
-                        else -> Log.w(TAG, "Mensaje recibido: $mensaje")
-                    }
+            runOnUiThread {
+                when (mensaje) {
+                    "control_1" -> showControl(ControlFragmentTap())
+                    "control_2" -> showControl(ControlFragmentDpad())
+                    "control_3" -> showControl(ControlFragmentJoystick())
+                    "control_4" -> showControl(ControlFragmentHold())
+                    "sensor_gyro" -> showControl(GyroscopeSensorFragment())
+                    "sensor_location" -> showControl(LocationSensorFragment())
+                    "sensor_heart" -> showControl(HeartRateSensorFragment())
                 }
             }
         }

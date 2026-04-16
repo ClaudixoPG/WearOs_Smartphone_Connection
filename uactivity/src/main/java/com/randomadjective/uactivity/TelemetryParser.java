@@ -17,18 +17,8 @@ public class TelemetryParser {
     public static boolean isTelemetryPayload(String message) {
         try {
             JSONObject json = new JSONObject(message);
-            boolean hasSchema = json.has("schema_version");
-
-            Log.i(TAG, "isTelemetryPayload() parsed OK, has schema_version=" + hasSchema);
-
-            if (!hasSchema) {
-                Log.w(TAG, "JSON payload received but schema_version is missing. Keys=" + json.names());
-            }
-
-            return hasSchema;
-
+            return json.has("schema_version");
         } catch (Exception e) {
-            Log.w(TAG, "isTelemetryPayload() -> invalid JSON or parse error. Raw=" + message, e);
             return false;
         }
     }
@@ -41,7 +31,6 @@ public class TelemetryParser {
 
             return "input_event".equals(recordType) && latencySampled;
         } catch (Exception e) {
-            Log.w(TAG, "shouldAck() failed", e);
             return false;
         }
     }
@@ -76,14 +65,6 @@ public class TelemetryParser {
             json.put("receive_ts_phone_native_ns", receiveTs);
 
             Context appContext = context.getApplicationContext();
-
-            Log.i(TAG, "----- enrichOnPhone() START -----");
-            Log.i(TAG, "Phone manufacturer=" + Build.MANUFACTURER);
-            Log.i(TAG, "Phone brand=" + Build.BRAND);
-            Log.i(TAG, "Phone model=" + Build.MODEL);
-            Log.i(TAG, "Phone device=" + Build.DEVICE);
-            Log.i(TAG, "Phone product=" + Build.PRODUCT);
-            Log.i(TAG, "receive_ts_phone_native_ns=" + receiveTs);
 
             Intent batteryStatus = appContext.registerReceiver(
                     null,
@@ -129,60 +110,28 @@ public class TelemetryParser {
             if (bm != null) {
                 try {
                     capacityProperty = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
-                } catch (Exception e) {
-                    Log.w(TAG, "Failed reading BATTERY_PROPERTY_CAPACITY", e);
-                }
+                } catch (Exception ignored) { }
 
                 try {
                     currentNowProperty = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-                } catch (Exception e) {
-                    Log.w(TAG, "Failed reading BATTERY_PROPERTY_CURRENT_NOW", e);
-                }
+                } catch (Exception ignored) { }
 
                 try {
                     currentAvgProperty = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE);
-                } catch (Exception e) {
-                    Log.w(TAG, "Failed reading BATTERY_PROPERTY_CURRENT_AVERAGE", e);
-                }
+                } catch (Exception ignored) { }
 
                 try {
                     energyCounterProperty = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER);
-                } catch (Exception e) {
-                    Log.w(TAG, "Failed reading BATTERY_PROPERTY_ENERGY_COUNTER", e);
-                }
+                } catch (Exception ignored) { }
 
                 try {
                     chargeCounterProperty = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
-                } catch (Exception e) {
-                    Log.w(TAG, "Failed reading BATTERY_PROPERTY_CHARGE_COUNTER", e);
-                }
+                } catch (Exception ignored) { }
 
                 if (capacityProperty != Integer.MIN_VALUE && capacityProperty >= 0) {
                     batteryPctFinal = capacityProperty;
                 }
-            } else {
-                Log.w(TAG, "BatteryManager is null");
             }
-
-            Log.i(TAG, "batteryStatus null? " + (batteryStatus == null));
-            Log.i(TAG, "EXTRA_LEVEL=" + level);
-            Log.i(TAG, "EXTRA_SCALE=" + scale);
-            Log.i(TAG, "EXTRA_TEMPERATURE(raw_tenths_C)=" + temp);
-            Log.i(TAG, "EXTRA_VOLTAGE(mV)=" + voltage);
-            Log.i(TAG, "EXTRA_STATUS=" + status);
-            Log.i(TAG, "EXTRA_PLUGGED=" + plugged);
-            Log.i(TAG, "EXTRA_HEALTH=" + health);
-
-            Log.i(TAG, "batteryPctFromIntent=" + batteryPctFromIntent);
-            Log.i(TAG, "temperatureC=" + temperatureC);
-
-            Log.i(TAG, "BATTERY_PROPERTY_CAPACITY=" + capacityProperty);
-            Log.i(TAG, "BATTERY_PROPERTY_CURRENT_NOW=" + currentNowProperty);
-            Log.i(TAG, "BATTERY_PROPERTY_CURRENT_AVERAGE=" + currentAvgProperty);
-            Log.i(TAG, "BATTERY_PROPERTY_ENERGY_COUNTER=" + energyCounterProperty);
-            Log.i(TAG, "BATTERY_PROPERTY_CHARGE_COUNTER=" + chargeCounterProperty);
-
-            Log.i(TAG, "batteryPctFinal=" + batteryPctFinal);
 
             json.put("battery_level_phone", batteryPctFinal);
             json.put("temperature_phone_c", temperatureC);
@@ -205,9 +154,6 @@ public class TelemetryParser {
             json.put("smartphone_manufacturer", Build.MANUFACTURER != null ? Build.MANUFACTURER : "UnknownManufacturer");
             json.put("smartphone_brand", Build.BRAND != null ? Build.BRAND : "UnknownBrand");
 
-            Log.i(TAG, "Telemetry JSON after phone enrichment: " + json.toString());
-            Log.i(TAG, "----- enrichOnPhone() END -----");
-
             return json.toString();
 
         } catch (Exception e) {
@@ -219,15 +165,8 @@ public class TelemetryParser {
     public static String markForwardToUnity(String message) {
         try {
             JSONObject json = new JSONObject(message);
-
-            long forwardTs = SystemClock.elapsedRealtimeNanos();
-            json.put("forward_ts_phone_native_ns", forwardTs);
-
-            Log.i(TAG, "markForwardToUnity() forward_ts_phone_native_ns=" + forwardTs);
-            Log.i(TAG, "Telemetry JSON forwarded to Unity: " + json.toString());
-
+            json.put("forward_ts_phone_native_ns", SystemClock.elapsedRealtimeNanos());
             return json.toString();
-
         } catch (Exception e) {
             Log.e(TAG, "markForwardToUnity() failed", e);
             return message;

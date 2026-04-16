@@ -17,10 +17,15 @@ object WearMessageSender {
     private const val PATH = "/mensaje"
     private const val TAG = "Wear_Send"
 
-    private const val CONTINUOUS_SAMPLE_EVERY = 10
+    private const val HOLD_SAMPLE_EVERY = 10
+    private const val JOYSTICK_SAMPLE_EVERY = 10
+    private const val GYRO_SAMPLE_EVERY = 15
+    private const val LOCATION_SAMPLE_EVERY = 15
+    private const val HEART_RATE_SAMPLE_EVERY = 15
+
     private const val ACK_TIMEOUT_MS = 2000L
 
-    private val continuousCounters = ConcurrentHashMap<String, AtomicInteger>()
+    private val counters = ConcurrentHashMap<String, AtomicInteger>()
     private val pendingEvents = ConcurrentHashMap<String, PendingEvent>()
 
     data class PendingEvent(
@@ -49,9 +54,9 @@ object WearMessageSender {
                     latencySampled = latencySampled
                 )
 
-                val json = JSONObject(payload)
-
                 if (latencySampled) {
+                    val json = JSONObject(payload)
+
                     val pending = PendingEvent(
                         eventId = json.optString("event_id", ""),
                         sessionId = json.optString("session_id", ""),
@@ -75,7 +80,7 @@ object WearMessageSender {
                 }
 
             } catch (e: Exception) {
-                Log.e(TAG, "Error enviando mensaje: ${e.message}", e)
+                Log.e(TAG, "Error enviando mensaje", e)
             }
         }.start()
     }
@@ -95,7 +100,6 @@ object WearMessageSender {
                     val pending = pendingEvents.remove(eventId)
 
                     if (pending == null) {
-                        Log.w(TAG, "ACK recibido sin pending event: $eventId")
                         true
                     } else {
                         val ackReceiveTsWatchNs = SystemClock.elapsedRealtimeNanos()
@@ -118,11 +122,6 @@ object WearMessageSender {
                             batteryLevelWatch = batteryLevelWatch,
                             temperatureWatchC = temperatureWatchC
                         )
-
-                        Log.i(
-                            TAG,
-                            "ACK procesado. eventId=$eventId rttMs=$rttMs oneWayEstMs=$oneWayEstMs"
-                        )
                         true
                     }
                 }
@@ -134,20 +133,23 @@ object WearMessageSender {
     }
 
     private fun shouldSampleLatency(inputFamily: String): Boolean {
-        return if (isContinuousFamily(inputFamily)) {
-            val counter = continuousCounters.getOrPut(inputFamily) { AtomicInteger(0) }
-            val value = counter.incrementAndGet()
-            value % CONTINUOUS_SAMPLE_EVERY == 0
-        } else {
-            true
+        return when (inputFamily) {
+            "Tap", "Dpad" -> true
+
+            "Hold" -> sampleEvery("Hold", HOLD_SAMPLE_EVERY)
+            "Joystick" -> sampleEvery("Joystick", JOYSTICK_SAMPLE_EVERY)
+            "Gyroscope" -> sampleEvery("Gyroscope", GYRO_SAMPLE_EVERY)
+            "Location" -> sampleEvery("Location", LOCATION_SAMPLE_EVERY)
+            "HeartRate" -> sampleEvery("HeartRate", HEART_RATE_SAMPLE_EVERY)
+
+            else -> false
         }
     }
 
-    private fun isContinuousFamily(inputFamily: String): Boolean {
-        return when (inputFamily) {
-            "Joystick", "Gyroscope", "Location", "HeartRate", "Force" -> true
-            else -> false
-        }
+    private fun sampleEvery(key: String, interval: Int): Boolean {
+        val counter = counters.getOrPut(key) { AtomicInteger(0) }
+        val value = counter.incrementAndGet()
+        return value % interval == 0
     }
 
     private fun cleanupExpiredPending() {
@@ -157,7 +159,6 @@ object WearMessageSender {
         while (iterator.hasNext()) {
             val entry = iterator.next()
             if (now - entry.value.createdAtMs > ACK_TIMEOUT_MS) {
-                Log.w(TAG, "Pending RTT event expired: ${entry.key}")
                 iterator.remove()
             }
         }
@@ -188,7 +189,7 @@ object WearMessageSender {
             message.startsWith("Tap") -> "Tap" to "input"
             message.startsWith("Joystick") -> "Joystick" to "input"
             message.startsWith("Dpad") -> "Dpad" to "input"
-            message.startsWith("fuerza") -> "Force" to "input"
+            message.startsWith("Hold:") || message.startsWith("Time:") -> "Hold" to "input"
             message.startsWith("Gyro") -> "Gyroscope" to "sensor"
             message.startsWith("Location") -> "Location" to "sensor"
             message.startsWith("HeartRate") -> "HeartRate" to "sensor"
