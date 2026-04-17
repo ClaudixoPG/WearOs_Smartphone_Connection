@@ -1,14 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/power_area"
+    android:id="@+id/hold_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/selectableItemBackground">
+    android:background="@android:color/black">
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:max="100"
-        android:progress="0"
-        style="@android:style/Widget.ProgressBar.Horizontal" />
+    <FrameLayout
+        android:id="@+id/meter_container"
+        android:layout_width="84dp"
+        android:layout_height="220dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_hold_meter"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <View
+            android:id="@+id/meter_fill"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_gravity="bottom"
+            android:background="#82BEC5" />
+
+        <ImageView
+            android:id="@+id/hook_indicator"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center_horizontal"
+            android:src="@drawable/hook"
+            android:contentDescription="Hook"
+            android:scaleType="fitCenter"
+            android:adjustViewBounds="true"
+            android:tint="@null" />
+    </FrameLayout>
+
 </FrameLayout>

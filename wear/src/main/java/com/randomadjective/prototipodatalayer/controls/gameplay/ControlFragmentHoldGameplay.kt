@@ -1,24 +1,23 @@
 package com.randomadjective.prototipodatalayer.controls.gameplay
 
 import android.annotation.SuppressLint
-import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
-import android.widget.TextView
+import android.widget.ImageView
 import com.randomadjective.prototipodatalayer.R
 import com.randomadjective.prototipodatalayer.base.BaseControlFragment
 import java.util.Locale
 
 class ControlFragmentHoldGameplay : BaseControlFragment(R.layout.fragment_gameplay_control_hold) {
 
-    private lateinit var barra: ProgressBar
-    private lateinit var textoHold: TextView
+    private lateinit var meterContainer: ViewGroup
+    private lateinit var meterFill: View
+    private lateinit var hookIndicator: ImageView
+
     private val handler = Handler(Looper.getMainLooper())
 
     private var holdValue100 = 0f
@@ -33,41 +32,9 @@ class ControlFragmentHoldGameplay : BaseControlFragment(R.layout.fragment_gamepl
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        barra = view.findViewById(R.id.progressBar)
-
-        textoHold = TextView(requireContext()).apply {
-            text = "0.00"
-            textSize = 16f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-        }
-
-        (view as ViewGroup).addView(textoHold)
-
-        val titulo = TextView(requireContext()).apply {
-            text = "Hold Gameplay"
-            textSize = 14f
-            setTextColor(Color.WHITE)
-            alpha = 0f
-            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            setPadding(0, 16, 0, 0)
-        }
-
-        view.addView(titulo)
-
-        titulo.animate()
-            .alpha(1f)
-            .setDuration(300)
-            .setStartDelay(100)
-            .withEndAction {
-                titulo.animate()
-                    .alpha(0f)
-                    .setDuration(300)
-                    .setStartDelay(1000)
-                    .withEndAction { view.removeView(titulo) }
-                    .start()
-            }
-            .start()
+        meterContainer = view.findViewById(R.id.meter_container)
+        meterFill = view.findViewById(R.id.meter_fill)
+        hookIndicator = view.findViewById(R.id.hook_indicator)
 
         view.setOnTouchListener { _, event ->
             when (event.actionMasked) {
@@ -89,6 +56,10 @@ class ControlFragmentHoldGameplay : BaseControlFragment(R.layout.fragment_gamepl
                 }
             }
             true
+        }
+
+        meterContainer.post {
+            updateUi()
         }
     }
 
@@ -128,8 +99,21 @@ class ControlFragmentHoldGameplay : BaseControlFragment(R.layout.fragment_gamepl
     }
 
     private fun updateUi() {
-        barra.progress = holdValue100.toInt()
-        textoHold.text = String.format(Locale.US, "%.2f", holdValue100 / 100f)
+        val value01 = (holdValue100 / 100f).coerceIn(0f, 1f)
+
+        val containerHeight = meterContainer.height
+        val hookHeight = hookIndicator.height
+
+        if (containerHeight <= 0 || hookHeight <= 0) return
+
+        val fillHeight = (containerHeight * value01).toInt()
+        meterFill.layoutParams.height = fillHeight
+        meterFill.requestLayout()
+
+        val availableTravel = (containerHeight - hookHeight).coerceAtLeast(0)
+        val hookPosY = availableTravel * (1f - value01)
+
+        hookIndicator.y = hookPosY
     }
 
     private fun sendHoldMessage(value01: Float) {
