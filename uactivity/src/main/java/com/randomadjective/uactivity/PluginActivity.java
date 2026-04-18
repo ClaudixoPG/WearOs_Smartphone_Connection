@@ -23,10 +23,20 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
     private static final String PATH = "/mensaje";
     private static final String TAG = "Phone_Main";
 
+    // ===== DEBUG SWITCHES =====
+    private static final boolean USE_MINIMAL_FORWARD_PATH = true;
+
+    private static final boolean ENABLE_TELEMETRY_ENRICH = false;
+    private static final boolean ENABLE_ACK = false;
+    private static final boolean ENABLE_FORWARD_MARK = false;
+    private static final boolean ENABLE_LATENCY_LOGS = true;
+    // ==========================
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
     }
+
     public int Add(int i, int j) {
         return i + j;
     }
@@ -85,6 +95,8 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
 
     @Override
     public void onMessageReceived(@NonNull MessageEvent messageEvent) {
+        long t0 = System.nanoTime();
+
         try {
             if (!PATH.equals(messageEvent.getPath())) {
                 return;
@@ -92,23 +104,16 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
 
             String message = new String(messageEvent.getData(), StandardCharsets.UTF_8);
 
-            boolean isTelemetry = TelemetryParser.isTelemetryPayload(message);
-
-            if (isTelemetry) {
-                String enriched = TelemetryParser.enrichOnPhone(this, message);
-
-                if (TelemetryParser.shouldAck(enriched)) {
-                    String ackMessage = TelemetryParser.buildInputAck(enriched);
-                    if (!ackMessage.isEmpty()) {
-                        sendAckToNode(messageEvent.getSourceNodeId(), ackMessage);
-                    }
-                }
-
-                String forwarded = TelemetryParser.markForwardToUnity(enriched);
-                UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", forwarded);
-            } else {
-                UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", message);
+            if (ENABLE_LATENCY_LOGS) {
+                Log.d(TAG, "[LATENCY] onMessageReceived start");
             }
+
+            if (USE_MINIMAL_FORWARD_PATH) {
+                forwardMessageToUnityMinimal(message, t0);
+                return;
+            }
+
+            forwardMessageToUnityInstrumented(messageEvent, message, t0);
 
         } catch (Exception e) {
             Log.e(TAG, "Error processing received message", e);
@@ -119,6 +124,90 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
             } catch (Exception inner) {
                 Log.e(TAG, "Fallback forwarding also failed", inner);
             }
+        }
+    }
+
+    /**
+     * Ruta mínima:
+     * - no parsea JSON
+     * - no enrich
+     * - no ack
+     * - no mark
+     * - solo reenvía el mensaje tal cual a Unity
+     */
+    private void forwardMessageToUnityMinimal(String message, long t0) {
+        if (ENABLE_LATENCY_LOGS) {
+            long t1 = System.nanoTime();
+            Log.d(TAG, "[LATENCY] minimal before UnitySendMessage total_ns=" + (t1 - t0));
+        }
+
+        UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", message);
+
+        if (ENABLE_LATENCY_LOGS) {
+            long t2 = System.nanoTime();
+            Log.d(TAG, "[LATENCY] minimal full native pipeline total_ns=" + (t2 - t0));
+        }
+    }
+
+    /**
+     * Ruta instrumentada original:
+     * mantiene enrich/ack/mark según switches.
+     */
+    private void forwardMessageToUnityInstrumented(@NonNull MessageEvent messageEvent, String message, long t0) {
+        boolean isTelemetry = TelemetryParser.isTelemetryPayload(message);
+
+        if (!isTelemetry) {
+            if (ENABLE_LATENCY_LOGS) {
+                long tEnd = System.nanoTime();
+                Log.d(TAG, "[LATENCY] non-telemetry direct forward total_ns=" + (tEnd - t0));
+            }
+
+            UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", message);
+            return;
+        }
+
+        String processed = message;
+
+        if (ENABLE_TELEMETRY_ENRICH) {
+            processed = TelemetryParser.enrichOnPhone(this, processed);
+
+            if (ENABLE_LATENCY_LOGS) {
+                long t1 = System.nanoTime();
+                Log.d(TAG, "[LATENCY] after enrich total_ns=" + (t1 - t0));
+            }
+        }
+
+        if (ENABLE_ACK && TelemetryParser.shouldAck(processed)) {
+            String ackMessage = TelemetryParser.buildInputAck(processed);
+            if (!ackMessage.isEmpty()) {
+                sendAckToNode(messageEvent.getSourceNodeId(), ackMessage);
+            }
+
+            if (ENABLE_LATENCY_LOGS) {
+                long t2 = System.nanoTime();
+                Log.d(TAG, "[LATENCY] after ack total_ns=" + (t2 - t0));
+            }
+        }
+
+        if (ENABLE_FORWARD_MARK) {
+            processed = TelemetryParser.markForwardToUnity(processed);
+
+            if (ENABLE_LATENCY_LOGS) {
+                long t3 = System.nanoTime();
+                Log.d(TAG, "[LATENCY] after forward mark total_ns=" + (t3 - t0));
+            }
+        }
+
+        if (ENABLE_LATENCY_LOGS) {
+            long t4 = System.nanoTime();
+            Log.d(TAG, "[LATENCY] before UnitySendMessage total_ns=" + (t4 - t0));
+        }
+
+        UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", processed);
+
+        if (ENABLE_LATENCY_LOGS) {
+            long t5 = System.nanoTime();
+            Log.d(TAG, "[LATENCY] full native pipeline total_ns=" + (t5 - t0));
         }
     }
 }

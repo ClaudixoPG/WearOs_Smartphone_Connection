@@ -143,18 +143,18 @@ class MainActivity : AppCompatActivity(),
 
         val mensaje = String(event.data, StandardCharsets.UTF_8)
 
-        if (TelemetryEnvelope.isJson(mensaje)) {
+        /*if (TelemetryEnvelope.isJson(mensaje)) {
             val recordType = TelemetryEnvelope.getRecordType(mensaje)
             if (recordType == "input_ack") {
                 val handled = WearMessageSender.handleIncomingAck(this, mensaje)
                 if (handled) return
             }
-        }
+        }*/
 
         Wearable.getNodeClient(this).localNode.addOnSuccessListener { localNode ->
-            if (event.sourceNodeId != localNode.id) {
+            /*if (event.sourceNodeId != localNode.id) {
                 lanzarNotificacion(mensaje)
-            }
+            }*/
 
             runOnUiThread {
                 val mode = WearMode.fromRoute(mensaje)

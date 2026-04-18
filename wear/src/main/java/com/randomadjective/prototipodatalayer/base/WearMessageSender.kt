@@ -10,6 +10,7 @@ import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.Wearable
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
 object WearMessageSender {
@@ -24,9 +25,18 @@ object WearMessageSender {
     private const val HEART_RATE_SAMPLE_EVERY = 15
 
     private const val ACK_TIMEOUT_MS = 2000L
+    private const val NODE_CACHE_TTL_MS = 5000L
 
     private val counters = ConcurrentHashMap<String, AtomicInteger>()
     private val pendingEvents = ConcurrentHashMap<String, PendingEvent>()
+
+    private val sendExecutor = Executors.newSingleThreadExecutor()
+
+    @Volatile
+    private var cachedNodeIds: List<String> = emptyList()
+
+    @Volatile
+    private var lastNodeRefreshMs: Long = 0L
 
     data class PendingEvent(
         val eventId: String,
@@ -38,8 +48,61 @@ object WearMessageSender {
         val createdAtMs: Long
     )
 
+    /**
+     * Llamar al entrar a la app o al reanudar, para evitar el primer lookup al momento del input.
+     */
+    fun warmup(context: Context) {
+        val appContext = context.applicationContext
+        sendExecutor.execute {
+            try {
+                refreshNodesIfNeeded(appContext, force = true)
+                Log.d(TAG, "Warmup complete. Nodes=${cachedNodeIds.size}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Warmup failed", e)
+            }
+        }
+    }
+
+    /**
+     * Ruta rápida para gameplay:
+     * sin telemetry envelope, sin ack, sin JSON.
+     */
+    fun sendRawMessage(context: Context, message: String) {
+        val appContext = context.applicationContext
+
+        sendExecutor.execute {
+            try {
+                val nodeIds = refreshNodesIfNeeded(appContext, force = false)
+                if (nodeIds.isEmpty()) {
+                    Log.w(TAG, "No connected nodes for RAW message: $message")
+                    return@execute
+                }
+
+                val bytes = message.toByteArray(Charsets.UTF_8)
+
+                for (nodeId in nodeIds) {
+                    Tasks.await(
+                        Wearable.getMessageClient(appContext)
+                            .sendMessage(nodeId, PATH, bytes)
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error enviando mensaje RAW", e)
+
+                // Si falló, intenta refrescar nodos para el próximo envío
+                invalidateNodeCache()
+            }
+        }
+    }
+
+    /**
+     * Ruta instrumentada original.
+     * Déjala para pruebas de latencia o sensores cuando quieras usarla.
+     */
     fun sendMessage(context: Context, message: String) {
-        Thread {
+        val appContext = context.applicationContext
+
+        sendExecutor.execute {
             try {
                 cleanupExpiredPending()
 
@@ -47,7 +110,7 @@ object WearMessageSender {
                 val latencySampled = shouldSampleLatency(inputFamily)
 
                 val payload = TelemetryEnvelope.wrap(
-                    context = context,
+                    context = appContext,
                     rawMessage = message,
                     inputFamily = inputFamily,
                     eventType = eventType,
@@ -72,17 +135,26 @@ object WearMessageSender {
                     }
                 }
 
-                val nodes = Tasks.await(Wearable.getNodeClient(context).connectedNodes)
+                val nodeIds = refreshNodesIfNeeded(appContext, force = false)
+                if (nodeIds.isEmpty()) {
+                    Log.w(TAG, "No connected nodes for instrumented message")
+                    return@execute
+                }
 
-                for (node in nodes) {
-                    Wearable.getMessageClient(context)
-                        .sendMessage(node.id, PATH, payload.toByteArray())
+                val bytes = payload.toByteArray(Charsets.UTF_8)
+
+                for (nodeId in nodeIds) {
+                    Tasks.await(
+                        Wearable.getMessageClient(appContext)
+                            .sendMessage(nodeId, PATH, bytes)
+                    )
                 }
 
             } catch (e: Exception) {
-                Log.e(TAG, "Error enviando mensaje", e)
+                Log.e(TAG, "Error enviando mensaje instrumentado", e)
+                invalidateNodeCache()
             }
-        }.start()
+        }
     }
 
     fun handleIncomingAck(context: Context, message: String): Boolean {
@@ -132,16 +204,36 @@ object WearMessageSender {
         }
     }
 
+    private fun refreshNodesIfNeeded(context: Context, force: Boolean): List<String> {
+        val now = System.currentTimeMillis()
+
+        if (!force &&
+            cachedNodeIds.isNotEmpty() &&
+            now - lastNodeRefreshMs < NODE_CACHE_TTL_MS
+        ) {
+            return cachedNodeIds
+        }
+
+        val nodes = Tasks.await(Wearable.getNodeClient(context).connectedNodes)
+        cachedNodeIds = nodes.map { it.id }
+        lastNodeRefreshMs = now
+
+        return cachedNodeIds
+    }
+
+    private fun invalidateNodeCache() {
+        cachedNodeIds = emptyList()
+        lastNodeRefreshMs = 0L
+    }
+
     private fun shouldSampleLatency(inputFamily: String): Boolean {
         return when (inputFamily) {
             "Tap", "Dpad" -> true
-
             "Hold" -> sampleEvery("Hold", HOLD_SAMPLE_EVERY)
             "Joystick" -> sampleEvery("Joystick", JOYSTICK_SAMPLE_EVERY)
             "Gyroscope" -> sampleEvery("Gyroscope", GYRO_SAMPLE_EVERY)
             "Location" -> sampleEvery("Location", LOCATION_SAMPLE_EVERY)
             "HeartRate" -> sampleEvery("HeartRate", HEART_RATE_SAMPLE_EVERY)
-
             else -> false
         }
     }
