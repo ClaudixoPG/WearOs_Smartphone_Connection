@@ -80,6 +80,10 @@ object WearSessionTelemetryStore {
     }
 
     fun startMinigameSession(context: Context, minigameId: String) {
+        if (currentMinigameSession == null) {
+            WearTelemetryCsvLogger.startNewRun(context)
+        }
+
         val (battery, temp) = readWatchBattery(context)
 
         currentMinigameSession = MinigameSessionRecord(

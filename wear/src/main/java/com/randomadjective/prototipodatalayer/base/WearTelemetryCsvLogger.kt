@@ -158,4 +158,19 @@ object WearTelemetryCsvLogger {
         if (value.isNullOrEmpty()) return "\"\""
         return "\"${value.replace("\"", "\"\"")}\""
     }
+
+    fun startNewRun(context: Context) {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+
+        eventsFile = File(context.filesDir, "watch_events_$timestamp.csv")
+        sessionFile = File(context.filesDir, "watch_sessions_$timestamp.csv")
+
+        eventsFile?.createNewFile()
+        sessionFile?.createNewFile()
+
+        eventsHeaderWritten = false
+        sessionHeaderWritten = false
+
+        Log.i(TAG, "NEW RUN started: $timestamp")
+    }
 }
