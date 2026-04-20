@@ -13,8 +13,8 @@ import com.randomadjective.prototipodatalayer.base.BaseControlFragment
 
 class ControlFragmentTapGameplay : BaseControlFragment(R.layout.fragment_gameplay_control_tap) {
 
-    private val useSoundFeedback = false //sonido
-    private val useHapticFeedback = false //vibración
+    private val useSoundFeedback = false
+    private val useHapticFeedback = false
 
     private var feedbackOverlay: View? = null
     private var centerLabel: TextView? = null

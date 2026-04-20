@@ -3,7 +3,6 @@ package com.randomadjective.uactivity;
 import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -16,33 +15,19 @@ import com.unity3d.player.UnityPlayer;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class PluginActivity extends UnityPlayerActivity implements MessageClient.OnMessageReceivedListener {
 
     private static final String PATH = "/mensaje";
     private static final String TAG = "Phone_Main";
 
-    // ===== DEBUG SWITCHES =====
-    private static final boolean USE_MINIMAL_FORWARD_PATH = true;
-
-    private static final boolean ENABLE_TELEMETRY_ENRICH = false;
-    private static final boolean ENABLE_ACK = false;
-    private static final boolean ENABLE_FORWARD_MARK = false;
-    private static final boolean ENABLE_LATENCY_LOGS = true;
-    // ==========================
+    private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-    }
-
-    public int Add(int i, int j) {
-        return i + j;
-    }
-
-    public void ShowToast(String message) {
-        Toast.makeText(UnityPlayer.currentActivity, message, Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -58,7 +43,7 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
     }
 
     public void sendMessageToSmartwatch(String message) {
-        new Thread(() -> {
+        ioExecutor.execute(() -> {
             Context context = UnityPlayer.currentActivity.getApplicationContext();
 
             try {
@@ -71,143 +56,96 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
                     );
                 }
 
-            } catch (ExecutionException | InterruptedException e) {
-                Log.e(TAG, "Error enviando mensaje", e);
             } catch (Exception e) {
-                Log.e(TAG, "Unexpected error in sendMessageToSmartwatch()", e);
+                Log.e(TAG, "Error sending message to smartwatch", e);
             }
-        }).start();
+        });
     }
 
-    private void sendAckToNode(String nodeId, String message) {
-        new Thread(() -> {
+    private void sendAckToNode(String nodeId, String eventId) {
+        ioExecutor.execute(() -> {
             try {
                 Context context = UnityPlayer.currentActivity.getApplicationContext();
+                String phoneModel = android.os.Build.MODEL != null ? android.os.Build.MODEL : "UnknownPhone";
+                String ack = InputNativeCodec.buildAck(eventId, phoneModel);
+
                 Tasks.await(
                         Wearable.getMessageClient(context)
-                                .sendMessage(nodeId, PATH, message.getBytes(StandardCharsets.UTF_8))
+                                .sendMessage(nodeId, PATH, ack.getBytes(StandardCharsets.UTF_8))
                 );
             } catch (Exception e) {
                 Log.e(TAG, "Error sending ACK", e);
             }
-        }).start();
+        });
     }
 
     @Override
     public void onMessageReceived(@NonNull MessageEvent messageEvent) {
-        long t0 = System.nanoTime();
+        if (!PATH.equals(messageEvent.getPath())) return;
 
-        try {
-            if (!PATH.equals(messageEvent.getPath())) {
-                return;
-            }
+        String message = new String(messageEvent.getData(), StandardCharsets.UTF_8);
 
-            String message = new String(messageEvent.getData(), StandardCharsets.UTF_8);
-
-            if (ENABLE_LATENCY_LOGS) {
-                Log.d(TAG, "[LATENCY] onMessageReceived start");
-            }
-
-            if (USE_MINIMAL_FORWARD_PATH) {
-                forwardMessageToUnityMinimal(message, t0);
-                return;
-            }
-
-            forwardMessageToUnityInstrumented(messageEvent, message, t0);
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error processing received message", e);
-
-            try {
-                String fallback = new String(messageEvent.getData(), StandardCharsets.UTF_8);
-                UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", fallback);
-            } catch (Exception inner) {
-                Log.e(TAG, "Fallback forwarding also failed", inner);
-            }
-        }
-    }
-
-    /**
-     * Ruta mínima:
-     * - no parsea JSON
-     * - no enrich
-     * - no ack
-     * - no mark
-     * - solo reenvía el mensaje tal cual a Unity
-     */
-    private void forwardMessageToUnityMinimal(String message, long t0) {
-        if (ENABLE_LATENCY_LOGS) {
-            long t1 = System.nanoTime();
-            Log.d(TAG, "[LATENCY] minimal before UnitySendMessage total_ns=" + (t1 - t0));
-        }
-
-        UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", message);
-
-        if (ENABLE_LATENCY_LOGS) {
-            long t2 = System.nanoTime();
-            Log.d(TAG, "[LATENCY] minimal full native pipeline total_ns=" + (t2 - t0));
-        }
-    }
-
-    /**
-     * Ruta instrumentada original:
-     * mantiene enrich/ack/mark según switches.
-     */
-    private void forwardMessageToUnityInstrumented(@NonNull MessageEvent messageEvent, String message, long t0) {
-        boolean isTelemetry = TelemetryParser.isTelemetryPayload(message);
-
-        if (!isTelemetry) {
-            if (ENABLE_LATENCY_LOGS) {
-                long tEnd = System.nanoTime();
-                Log.d(TAG, "[LATENCY] non-telemetry direct forward total_ns=" + (tEnd - t0));
-            }
-
-            UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", message);
+        InputNativeCodec.MeasuredEvent measuredEvent = InputNativeCodec.parseMeasuredEvent(message);
+        if (measuredEvent != null) {
+            UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", measuredEvent.rawMessage);
+            sendAckToNode(messageEvent.getSourceNodeId(), measuredEvent.eventId);
             return;
         }
 
-        String processed = message;
+        InputNativeCodec.RawEvent rawEvent = InputNativeCodec.parseRawEvent(message);
+        if (rawEvent != null) {
+            UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", rawEvent.rawMessage);
+            return;
+        }
 
-        if (ENABLE_TELEMETRY_ENRICH) {
-            processed = TelemetryParser.enrichOnPhone(this, processed);
+        UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", message);
+    }
 
-            if (ENABLE_LATENCY_LOGS) {
-                long t1 = System.nanoTime();
-                Log.d(TAG, "[LATENCY] after enrich total_ns=" + (t1 - t0));
+    public String getPhoneSessionSnapshot() {
+        PhoneSessionInfo.Snapshot snapshot = PhoneSessionInfo.read(getApplicationContext());
+        return snapshot.phoneModel + "|" + snapshot.batteryLevel + "|" + snapshot.temperatureC;
+    }
+    public void startMinigameSession(String minigameId) {
+        ioExecutor.execute(() -> {
+            try {
+                Context context = UnityPlayer.currentActivity.getApplicationContext();
+
+                String message = "SESSION_START|" + minigameId;
+
+                List<Node> nodes = Tasks.await(Wearable.getNodeClient(context).getConnectedNodes());
+
+                for (Node n : nodes) {
+                    Tasks.await(
+                            Wearable.getMessageClient(context)
+                                    .sendMessage(n.getId(), PATH, message.getBytes(StandardCharsets.UTF_8))
+                    );
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error sending SESSION_START", e);
             }
-        }
+        });
+    }
 
-        if (ENABLE_ACK && TelemetryParser.shouldAck(processed)) {
-            String ackMessage = TelemetryParser.buildInputAck(processed);
-            if (!ackMessage.isEmpty()) {
-                sendAckToNode(messageEvent.getSourceNodeId(), ackMessage);
+    public void endMinigameSession() {
+        ioExecutor.execute(() -> {
+            try {
+                Context context = UnityPlayer.currentActivity.getApplicationContext();
+
+                String message = "SESSION_END";
+
+                List<Node> nodes = Tasks.await(Wearable.getNodeClient(context).getConnectedNodes());
+
+                for (Node n : nodes) {
+                    Tasks.await(
+                            Wearable.getMessageClient(context)
+                                    .sendMessage(n.getId(), PATH, message.getBytes(StandardCharsets.UTF_8))
+                    );
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error sending SESSION_END", e);
             }
-
-            if (ENABLE_LATENCY_LOGS) {
-                long t2 = System.nanoTime();
-                Log.d(TAG, "[LATENCY] after ack total_ns=" + (t2 - t0));
-            }
-        }
-
-        if (ENABLE_FORWARD_MARK) {
-            processed = TelemetryParser.markForwardToUnity(processed);
-
-            if (ENABLE_LATENCY_LOGS) {
-                long t3 = System.nanoTime();
-                Log.d(TAG, "[LATENCY] after forward mark total_ns=" + (t3 - t0));
-            }
-        }
-
-        if (ENABLE_LATENCY_LOGS) {
-            long t4 = System.nanoTime();
-            Log.d(TAG, "[LATENCY] before UnitySendMessage total_ns=" + (t4 - t0));
-        }
-
-        UnityPlayer.UnitySendMessage("UnityActivity", "OnMessageReceived", processed);
-
-        if (ENABLE_LATENCY_LOGS) {
-            long t5 = System.nanoTime();
-            Log.d(TAG, "[LATENCY] full native pipeline total_ns=" + (t5 - t0));
-        }
+        });
     }
 }

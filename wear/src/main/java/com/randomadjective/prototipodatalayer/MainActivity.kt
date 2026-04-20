@@ -1,25 +1,14 @@
 package com.randomadjective.prototipodatalayer
 
-import android.Manifest
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
 import android.widget.TextView
-import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.app.RemoteInput
 import androidx.fragment.app.Fragment
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
-import com.randomadjective.prototipodatalayer.base.TelemetryEnvelope
 import com.randomadjective.prototipodatalayer.base.WearMessageSender
 import com.randomadjective.prototipodatalayer.navigation.ModeMenuFragment
 import com.randomadjective.prototipodatalayer.navigation.WearMode
@@ -37,17 +26,6 @@ class MainActivity : AppCompatActivity(),
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContentView(R.layout.activity_main)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                "wear_channel",
-                "Mensajes del Smartphone",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
-        }
-
         if (savedInstanceState == null) {
             showModeMenu()
         }
@@ -57,11 +35,12 @@ class MainActivity : AppCompatActivity(),
         super.onResume()
         enableImmersiveMode()
         Wearable.getMessageClient(this).addListener(this)
+        WearMessageSender.warmup(this)
     }
 
     override fun onPause() {
-        super.onPause()
         Wearable.getMessageClient(this).removeListener(this)
+        super.onPause()
     }
 
     override fun onModeSelected(mode: WearMode) {
@@ -137,81 +116,36 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override fun onMessageReceived(event: MessageEvent) {
         if (event.path != path) return
 
-        val mensaje = String(event.data, StandardCharsets.UTF_8)
+        val message = String(event.data, StandardCharsets.UTF_8)
 
-        /*if (TelemetryEnvelope.isJson(mensaje)) {
-            val recordType = TelemetryEnvelope.getRecordType(mensaje)
-            if (recordType == "input_ack") {
-                val handled = WearMessageSender.handleIncomingAck(this, mensaje)
-                if (handled) return
-            }
-        }*/
-
-        Wearable.getNodeClient(this).localNode.addOnSuccessListener { localNode ->
-            /*if (event.sourceNodeId != localNode.id) {
-                lanzarNotificacion(mensaje)
-            }*/
-
-            runOnUiThread {
-                val mode = WearMode.fromRoute(mensaje)
-                if (mode != null) {
-                    navigateToMode(mode, addToBackStack = true)
-                }
-            }
-        }
-    }
-
-    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-    private fun lanzarNotificacion(mensaje: String) {
-        val notiMode = 2
-
-        val intent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val builder = NotificationCompat.Builder(this, "wear_channel")
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Nuevo mensaje")
-            .setContentText(mensaje)
-            .setAutoCancel(true)
-
-        if (notiMode == 1) {
-            builder.setContentIntent(pendingIntent)
-                .addAction(
-                    NotificationCompat.Action.Builder(
-                        R.mipmap.ic_launcher,
-                        "Ver mensaje",
-                        pendingIntent
-                    ).build()
-                )
-        } else {
-            val remoteInput = RemoteInput.Builder("respuesta")
-                .setLabel("Responder mensaje")
-                .build()
-
-            val replyIntent = Intent(this, MainActivity::class.java)
-
-            val replyPendingIntent = PendingIntent.getActivity(
-                this,
-                1,
-                replyIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-            )
-
-            val replyAction = NotificationCompat.Action.Builder(
-                R.mipmap.ic_launcher,
-                "Responder",
-                replyPendingIntent
-            ).addRemoteInput(remoteInput).build()
-
-            builder.addAction(replyAction)
+        // 1) ACK de medición
+        if (WearMessageSender.handleIncomingMessage(this, message)) {
+            return
         }
 
-        NotificationManagerCompat.from(this).notify(1, builder.build())
+        // 2) Control de sesión por minijuego
+        if (message.startsWith("SESSION_START|")) {
+            val minigameId = message.substringAfter("SESSION_START|", "").trim()
+            if (minigameId.isNotEmpty()) {
+                WearMessageSender.startMinigameSession(this, minigameId)
+            }
+            return
+        }
+
+        if (message == "SESSION_END") {
+            WearMessageSender.endMinigameSession(this)
+            return
+        }
+
+        // 3) Navegación / control antiguo
+        runOnUiThread {
+            val mode = WearMode.fromRoute(message)
+            if (mode != null) {
+                navigateToMode(mode, addToBackStack = true)
+            }
+        }
     }
 }

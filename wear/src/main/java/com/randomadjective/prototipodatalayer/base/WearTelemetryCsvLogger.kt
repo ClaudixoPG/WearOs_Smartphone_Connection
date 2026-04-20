@@ -1,7 +1,6 @@
 package com.randomadjective.prototipodatalayer.base
 
 import android.content.Context
-import android.os.Build
 import android.util.Log
 import java.io.File
 import java.io.FileWriter
@@ -13,89 +12,141 @@ object WearTelemetryCsvLogger {
 
     private const val TAG = "Wear_CSV"
 
-    private var file: File? = null
-    private var headerWritten = false
+    private var eventsFile: File? = null
+    private var sessionFile: File? = null
+    private var eventsHeaderWritten = false
+    private var sessionHeaderWritten = false
 
-    private fun ensureFile(context: Context) {
-        if (file != null) return
-
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val fileName = "watch_latency_$timestamp.csv"
-        file = File(context.filesDir, fileName)
-
-        if (!file!!.exists()) {
-            file!!.createNewFile()
+    private fun ensureFiles(context: Context) {
+        if (eventsFile == null) {
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+            eventsFile = File(context.filesDir, "watch_events_$timestamp.csv")
+            if (!eventsFile!!.exists()) {
+                eventsFile!!.createNewFile()
+            }
         }
 
-        if (!headerWritten) {
-            FileWriter(file, true).use { writer ->
+        if (sessionFile == null) {
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+            sessionFile = File(context.filesDir, "watch_sessions_$timestamp.csv")
+            if (!sessionFile!!.exists()) {
+                sessionFile!!.createNewFile()
+            }
+        }
+
+        if (!eventsHeaderWritten) {
+            FileWriter(eventsFile, true).use { writer ->
                 writer.appendLine(
                     listOf(
                         "event_id",
                         "session_id",
-                        "event_type",
+                        "minigame_id",
                         "input_family",
                         "raw_message",
                         "send_ts_watch_ns",
                         "ack_receive_ts_watch_ns",
-                        "rtt_watch_phone_ms",
-                        "watch_to_phone_one_way_est_ms",
+                        "rtt_ms",
+                        "one_way_est_ms",
                         "smartwatch_model",
-                        "battery_level_watch",
-                        "temperature_watch_c",
-                        "test_timestamp_utc"
+                        "smartphone_model"
                     ).joinToString(",")
                 )
             }
-            headerWritten = true
+            eventsHeaderWritten = true
         }
 
-        Log.i(TAG, "Watch CSV path: ${file?.absolutePath}")
-    }
-
-    fun logLatencyResult(
-        context: Context,
-        eventId: String,
-        sessionId: String,
-        eventType: String,
-        inputFamily: String,
-        rawMessage: String,
-        sendTsWatchNs: Long,
-        ackReceiveTsWatchNs: Long,
-        rttMs: Double,
-        oneWayEstMs: Double,
-        batteryLevelWatch: Double,
-        temperatureWatchC: Double
-    ) {
-        try {
-            ensureFile(context)
-
-            FileWriter(file, true).use { writer ->
+        if (!sessionHeaderWritten) {
+            FileWriter(sessionFile, true).use { writer ->
                 writer.appendLine(
                     listOf(
-                        escape(eventId),
-                        escape(sessionId),
-                        escape(eventType),
-                        escape(inputFamily),
-                        escape(rawMessage),
-                        sendTsWatchNs.toString(),
-                        ackReceiveTsWatchNs.toString(),
-                        formatDouble(rttMs),
-                        formatDouble(oneWayEstMs),
-                        escape(Build.MODEL ?: "UnknownWatch"),
-                        formatDouble(batteryLevelWatch),
-                        formatDouble(temperatureWatchC),
-                        escape(
-                            SimpleDateFormat(
-                                "yyyy-MM-dd HH:mm:ss",
-                                Locale.US
-                            ).format(Date())
-                        )
+                        "session_id",
+                        "minigame_id",
+                        "smartwatch_model",
+                        "smartphone_model",
+                        "battery_level_watch_start",
+                        "battery_level_watch_end",
+                        "temperature_watch_start",
+                        "temperature_watch_end",
+                        "battery_level_phone_start",
+                        "battery_level_phone_end",
+                        "temperature_phone_start",
+                        "temperature_phone_end",
+                        "start_timestamp_utc",
+                        "end_timestamp_utc",
+                        "event_count",
+                        "ack_timeout_count"
+                    ).joinToString(",")
+                )
+            }
+            sessionHeaderWritten = true
+        }
+
+        Log.i(TAG, "Events CSV path: ${eventsFile?.absolutePath}")
+        Log.i(TAG, "Session CSV path: ${sessionFile?.absolutePath}")
+    }
+
+    fun flushCompletedEvents(
+        context: Context,
+        events: List<WearSessionTelemetryStore.CompletedInputEvent>
+    ) {
+        if (events.isEmpty()) return
+
+        try {
+            ensureFiles(context)
+            FileWriter(eventsFile, true).use { writer ->
+                for (event in events) {
+                    writer.appendLine(
+                        listOf(
+                            escape(event.eventId),
+                            escape(event.sessionId),
+                            escape(event.minigameId),
+                            escape(event.inputFamily),
+                            escape(event.rawMessage),
+                            event.sendTsWatchNs.toString(),
+                            event.ackReceiveTsWatchNs.toString(),
+                            formatDouble(event.rttMs),
+                            formatDouble(event.oneWayEstMs),
+                            escape(event.watchModel),
+                            escape(event.phoneModel)
+                        ).joinToString(",")
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to flush completed events", e)
+        }
+    }
+
+    fun flushSessionSummary(
+        context: Context,
+        session: WearSessionTelemetryStore.MinigameSessionRecord
+    ) {
+        try {
+            ensureFiles(context)
+            FileWriter(sessionFile, true).use { writer ->
+                writer.appendLine(
+                    listOf(
+                        escape(session.sessionId),
+                        escape(session.minigameId),
+                        escape(session.watchModel),
+                        escape(session.phoneModel),
+                        formatDouble(session.batteryLevelWatchStart),
+                        formatDouble(session.batteryLevelWatchEnd),
+                        formatDouble(session.temperatureWatchStart),
+                        formatDouble(session.temperatureWatchEnd),
+                        formatDouble(session.batteryLevelPhoneStart),
+                        formatDouble(session.batteryLevelPhoneEnd),
+                        formatDouble(session.temperaturePhoneStart),
+                        formatDouble(session.temperaturePhoneEnd),
+                        escape(session.startTimestampUtc),
+                        escape(session.endTimestampUtc),
+                        session.eventCount.toString(),
+                        session.ackTimeoutCount.toString()
                     ).joinToString(",")
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to log watch latency result", e)
+            Log.e(TAG, "Failed to flush session summary", e)
         }
     }
 

@@ -5,6 +5,6 @@ import androidx.fragment.app.Fragment
 abstract class BaseControlFragment(layoutId: Int) : Fragment(layoutId) {
 
     protected fun sendMessage(message: String) {
-        WearMessageSender.sendRawMessage(requireContext(), message)
+        WearMessageSender.sendMessage(requireContext(), message)
     }
 }
