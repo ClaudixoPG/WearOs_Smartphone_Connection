@@ -28,7 +28,7 @@ class ControlFragmentHoldGameplay : BaseControlFragment(R.layout.fragment_gamepl
     private val decrementoPorSegundo = 20f
 
     private var lastSentTime = 0L
-    private val sendIntervalMs = 50L
+    private val sendIntervalMs = 33L
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -43,6 +43,7 @@ class ControlFragmentHoldGameplay : BaseControlFragment(R.layout.fragment_gamepl
                         charging = true
                         lastUpdateTime = System.currentTimeMillis()
                         handler.removeCallbacks(descargaRunnable)
+                        handler.removeCallbacks(cargaRunnable)
                         handler.post(cargaRunnable)
                     }
                 }
@@ -50,8 +51,8 @@ class ControlFragmentHoldGameplay : BaseControlFragment(R.layout.fragment_gamepl
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     charging = false
                     lastUpdateTime = System.currentTimeMillis()
-                    sendHoldMessageImmediate(0f)
                     handler.removeCallbacks(cargaRunnable)
+                    handler.removeCallbacks(descargaRunnable)
                     handler.post(descargaRunnable)
                 }
             }
@@ -94,7 +95,11 @@ class ControlFragmentHoldGameplay : BaseControlFragment(R.layout.fragment_gamepl
             if (holdValue100 < 0f) holdValue100 = 0f
 
             updateUi()
-            handler.postDelayed(this, 16L)
+            sendHoldMessage(holdValue100 / 100f)
+
+            if (holdValue100 > 0f) {
+                handler.postDelayed(this, 16L)
+            }
         }
     }
 
@@ -124,8 +129,7 @@ class ControlFragmentHoldGameplay : BaseControlFragment(R.layout.fragment_gamepl
     }
 
     private fun sendHoldMessageImmediate(value01: Float) {
-        val clamped = value01.coerceIn(0f, 1f)
-        val message = String.format(Locale.US, "Hold:%.2f", clamped)
+        val message = String.format(Locale.US, "Hold:%.2f", value01)
         sendMessage(message)
     }
 

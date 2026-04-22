@@ -18,7 +18,7 @@ import java.util.Locale
 class ControlFragmentJoystickGameplay : BaseControlFragment(R.layout.fragment_gameplay_control_joystick) {
 
     private var lastSentTime = 0L
-    private val sendIntervalMs = 50L
+    private val sendIntervalMs = 33L
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

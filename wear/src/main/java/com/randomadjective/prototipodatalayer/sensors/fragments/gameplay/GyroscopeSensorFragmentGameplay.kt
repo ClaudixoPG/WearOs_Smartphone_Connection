@@ -27,7 +27,7 @@ class GyroscopeSensorFragmentGameplay : Fragment(R.layout.fragment_gameplay_sens
     private lateinit var tvMovementLabel: TextView
     private lateinit var tvTimestamp: TextView
     private var lastSentTime = 0L
-    private val sendIntervalMs = 50L
+    private val sendIntervalMs = 33L
 
     private lateinit var gyroscopeProvider: GyroscopeSensorProvider
 
