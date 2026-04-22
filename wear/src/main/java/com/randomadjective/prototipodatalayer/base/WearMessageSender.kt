@@ -118,6 +118,26 @@ object WearMessageSender {
     }
 
     // -------------------------
+    // Test Session (RUN)
+    // -------------------------
+
+    fun startTestSession(context: Context) {
+        Log.i(TAG, "TEST SESSION START")
+
+        WearSessionTelemetryStore.resetAll() // limpia estado anterior
+        WearTelemetryCsvLogger.startNewRun(context)
+    }
+
+    fun endTestSession(context: Context) {
+        Log.i(TAG, "TEST SESSION END")
+
+        val events = WearSessionTelemetryStore.drainCompletedEvents()
+        WearTelemetryCsvLogger.flushCompletedEvents(context, events)
+
+        WearTelemetryCsvLogger.closeRun() // opcional pero recomendable
+    }
+
+    // -------------------------
     // Helpers
     // -------------------------
 
@@ -168,4 +188,6 @@ object WearMessageSender {
         cachedNodeIds = emptyList()
         lastNodeRefreshMs = 0L
     }
+
+
 }

@@ -17,25 +17,17 @@ object WearTelemetryCsvLogger {
     private var eventsHeaderWritten = false
     private var sessionHeaderWritten = false
 
-    private fun ensureFiles(context: Context) {
-        if (eventsFile == null) {
-            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-            eventsFile = File(context.filesDir, "watch_events_$timestamp.csv")
-            if (!eventsFile!!.exists()) {
-                eventsFile!!.createNewFile()
-            }
-        }
+    private fun ensureFiles(context: Context): Boolean {
+        val localEventsFile = eventsFile
+        val localSessionFile = sessionFile
 
-        if (sessionFile == null) {
-            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-            sessionFile = File(context.filesDir, "watch_sessions_$timestamp.csv")
-            if (!sessionFile!!.exists()) {
-                sessionFile!!.createNewFile()
-            }
+        if (localEventsFile == null || localSessionFile == null) {
+            Log.e(TAG, "Files not initialized. Did you call startNewRun()?")
+            return false
         }
 
         if (!eventsHeaderWritten) {
-            FileWriter(eventsFile, true).use { writer ->
+            FileWriter(localEventsFile, true).use { writer ->
                 writer.appendLine(
                     listOf(
                         "event_id",
@@ -56,7 +48,7 @@ object WearTelemetryCsvLogger {
         }
 
         if (!sessionHeaderWritten) {
-            FileWriter(sessionFile, true).use { writer ->
+            FileWriter(localSessionFile, true).use { writer ->
                 writer.appendLine(
                     listOf(
                         "session_id",
@@ -81,8 +73,7 @@ object WearTelemetryCsvLogger {
             sessionHeaderWritten = true
         }
 
-        Log.i(TAG, "Events CSV path: ${eventsFile?.absolutePath}")
-        Log.i(TAG, "Session CSV path: ${sessionFile?.absolutePath}")
+        return true
     }
 
     fun flushCompletedEvents(
@@ -92,8 +83,11 @@ object WearTelemetryCsvLogger {
         if (events.isEmpty()) return
 
         try {
-            ensureFiles(context)
-            FileWriter(eventsFile, true).use { writer ->
+            if (!ensureFiles(context)) return
+
+            val localEventsFile = eventsFile ?: return
+
+            FileWriter(localEventsFile, true).use { writer ->
                 for (event in events) {
                     writer.appendLine(
                         listOf(
@@ -122,8 +116,11 @@ object WearTelemetryCsvLogger {
         session: WearSessionTelemetryStore.MinigameSessionRecord
     ) {
         try {
-            ensureFiles(context)
-            FileWriter(sessionFile, true).use { writer ->
+            if (!ensureFiles(context)) return
+
+            val localSessionFile = sessionFile ?: return
+
+            FileWriter(localSessionFile, true).use { writer ->
                 writer.appendLine(
                     listOf(
                         escape(session.sessionId),
@@ -172,5 +169,15 @@ object WearTelemetryCsvLogger {
         sessionHeaderWritten = false
 
         Log.i(TAG, "NEW RUN started: $timestamp")
+    }
+
+    fun closeRun() {
+        Log.i(TAG, "Closing run")
+
+        eventsFile = null
+        sessionFile = null
+
+        eventsHeaderWritten = false
+        sessionHeaderWritten = false
     }
 }

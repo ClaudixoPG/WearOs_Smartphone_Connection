@@ -12,9 +12,9 @@ class ControlFragmentDpadGameplay : BaseControlFragment(R.layout.fragment_gamepl
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         setupColorButton(view.findViewById(R.id.btn_red), "UP")
+        setupColorButton(view.findViewById(R.id.btn_yellow), "DOWN")
         setupColorButton(view.findViewById(R.id.btn_blue), "LEFT")
         setupColorButton(view.findViewById(R.id.btn_green), "RIGHT")
-        setupColorButton(view.findViewById(R.id.btn_yellow), "DOWN")
     }
 
     @SuppressLint("ClickableViewAccessibility")

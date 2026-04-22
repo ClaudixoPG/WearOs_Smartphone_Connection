@@ -1,6 +1,7 @@
 package com.randomadjective.prototipodatalayer
 
 import android.os.Bundle
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.widget.TextView
@@ -120,27 +121,39 @@ class MainActivity : AppCompatActivity(),
         if (event.path != path) return
 
         val message = String(event.data, StandardCharsets.UTF_8)
+        println("message is:" + message)
 
         // 1) ACK de medición
         if (WearMessageSender.handleIncomingMessage(this, message)) {
             return
         }
 
-        // 2) Control de sesión por minijuego
-        if (message.startsWith("SESSION_START|")) {
-            val minigameId = message.substringAfter("SESSION_START|", "").trim()
+        // 2) Inicio/fin de sesión general de prueba
+        if (message == "TEST_SESSION_START") {
+            WearMessageSender.startTestSession(this)
+            return
+        }
+
+        if (message == "TEST_SESSION_END") {
+            WearMessageSender.endTestSession(this)
+            return
+        }
+
+        // 3) Inicio/fin de sesión por minijuego
+        if (message.startsWith("MINIGAME_SESSION_START|")) {
+            val minigameId = message.substringAfter("MINIGAME_SESSION_START|", "").trim()
             if (minigameId.isNotEmpty()) {
                 WearMessageSender.startMinigameSession(this, minigameId)
             }
             return
         }
 
-        if (message == "SESSION_END") {
+        if (message == "MINIGAME_SESSION_END") {
             WearMessageSender.endMinigameSession(this)
             return
         }
 
-        // 3) Navegación / control antiguo
+        // 4) Navegación / control antiguo
         runOnUiThread {
             val mode = WearMode.fromRoute(message)
             if (mode != null) {

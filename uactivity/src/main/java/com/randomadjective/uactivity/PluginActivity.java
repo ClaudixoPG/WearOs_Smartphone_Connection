@@ -105,12 +105,12 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
         PhoneSessionInfo.Snapshot snapshot = PhoneSessionInfo.read(getApplicationContext());
         return snapshot.phoneModel + "|" + snapshot.batteryLevel + "|" + snapshot.temperatureC;
     }
-    public void startMinigameSession(String minigameId) {
+
+    public void startTestSession() {
         ioExecutor.execute(() -> {
             try {
                 Context context = UnityPlayer.currentActivity.getApplicationContext();
-
-                String message = "SESSION_START|" + minigameId;
+                String message = "TEST_SESSION_START";
 
                 List<Node> nodes = Tasks.await(Wearable.getNodeClient(context).getConnectedNodes());
 
@@ -122,7 +122,49 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
                 }
 
             } catch (Exception e) {
-                Log.e(TAG, "Error sending SESSION_START", e);
+                Log.e(TAG, "Error sending TEST_SESSION_START", e);
+            }
+        });
+    }
+
+    public void endTestSession() {
+        ioExecutor.execute(() -> {
+            try {
+                Context context = UnityPlayer.currentActivity.getApplicationContext();
+                String message = "TEST_SESSION_END";
+
+                List<Node> nodes = Tasks.await(Wearable.getNodeClient(context).getConnectedNodes());
+
+                for (Node n : nodes) {
+                    Tasks.await(
+                            Wearable.getMessageClient(context)
+                                    .sendMessage(n.getId(), PATH, message.getBytes(StandardCharsets.UTF_8))
+                    );
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error sending TEST_SESSION_END", e);
+            }
+        });
+    }
+
+    public void startMinigameSession(String minigameId) {
+        ioExecutor.execute(() -> {
+            try {
+                Context context = UnityPlayer.currentActivity.getApplicationContext();
+                String message = "MINIGAME_SESSION_START|" + minigameId;
+
+                List<Node> nodes = Tasks.await(Wearable.getNodeClient(context).getConnectedNodes());
+
+                for (Node n : nodes) {
+                    Tasks.await(
+                            Wearable.getMessageClient(context)
+                                    .sendMessage(n.getId(), PATH, message.getBytes(StandardCharsets.UTF_8))
+                    );
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error sending MINIGAME_SESSION_START", e);
             }
         });
     }
@@ -131,8 +173,7 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
         ioExecutor.execute(() -> {
             try {
                 Context context = UnityPlayer.currentActivity.getApplicationContext();
-
-                String message = "SESSION_END";
+                String message = "MINIGAME_SESSION_END";
 
                 List<Node> nodes = Tasks.await(Wearable.getNodeClient(context).getConnectedNodes());
 
@@ -144,7 +185,7 @@ public class PluginActivity extends UnityPlayerActivity implements MessageClient
                 }
 
             } catch (Exception e) {
-                Log.e(TAG, "Error sending SESSION_END", e);
+                Log.e(TAG, "Error sending MINIGAME_SESSION_END", e);
             }
         });
     }

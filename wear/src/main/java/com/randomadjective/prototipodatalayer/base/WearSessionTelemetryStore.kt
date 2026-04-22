@@ -62,7 +62,7 @@ object WearSessionTelemetryStore {
     private const val ACK_TIMEOUT_MS = 2000L
 
     private val watchModel: String = Build.MODEL ?: "UnknownWatch"
-    private val sessionId: String = buildSessionId()
+    private var sessionId: String = buildSessionId()
     private val eventCounter = AtomicLong(0)
 
     private val pendingEvents = ConcurrentHashMap<String, PendingInputEvent>()
@@ -79,11 +79,15 @@ object WearSessionTelemetryStore {
         return String.format(Locale.US, "W-%s-%06d", sessionId, eventCounter.incrementAndGet())
     }
 
-    fun startMinigameSession(context: Context, minigameId: String) {
-        if (currentMinigameSession == null) {
-            WearTelemetryCsvLogger.startNewRun(context)
-        }
+    fun resetAll() {
+        sessionId = buildSessionId()
+        pendingEvents.clear()
+        completedEvents.clear()
+        currentMinigameSession = null
+        eventCounter.set(0)
+    }
 
+    fun startMinigameSession(context: Context, minigameId: String) {
         val (battery, temp) = readWatchBattery(context)
 
         currentMinigameSession = MinigameSessionRecord(
