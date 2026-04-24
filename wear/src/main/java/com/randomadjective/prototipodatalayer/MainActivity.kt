@@ -121,7 +121,7 @@ class MainActivity : AppCompatActivity(),
         if (event.path != path) return
 
         val message = String(event.data, StandardCharsets.UTF_8)
-        println("message is:" + message)
+        //println("message is:" + message)
 
         // 1) ACK de medición
         if (WearMessageSender.handleIncomingMessage(this, message)) {
