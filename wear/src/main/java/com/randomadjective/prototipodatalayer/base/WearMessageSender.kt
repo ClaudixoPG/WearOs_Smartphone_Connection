@@ -2,7 +2,6 @@ package com.randomadjective.prototipodatalayer.base
 
 import android.content.Context
 import android.util.Log
-import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.Wearable
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
@@ -13,6 +12,9 @@ object WearMessageSender {
     private const val TAG = "Wear_Send"
     private const val NODE_CACHE_TTL_MS = 5000L
 
+    // El executor sigue siendo single-threaded: solo sirve para serializar
+    // la preparación del mensaje (clasificar, construir payload, leer caché).
+    // El envío BT ya no bloquea este hilo.
     private val sendExecutor = Executors.newSingleThreadExecutor()
 
     @Volatile
@@ -24,6 +26,10 @@ object WearMessageSender {
     @Volatile
     private var currentMinigameId: String = "unknown_minigame"
 
+    // Evita disparar múltiples refrescos de nodos simultáneos en background.
+    @Volatile
+    private var nodeRefreshInFlight: Boolean = false
+
     // Sampling counters (para escalabilidad futura)
     private val counters = HashMap<String, AtomicInteger>()
 
@@ -31,7 +37,7 @@ object WearMessageSender {
         val appContext = context.applicationContext
         sendExecutor.execute {
             try {
-                refreshNodesIfNeeded(appContext, true)
+                refreshNodesAsync(appContext)
                 Log.d(TAG, "Warmup OK")
             } catch (e: Exception) {
                 Log.e(TAG, "Warmup error", e)
@@ -84,23 +90,34 @@ object WearMessageSender {
                     )
                 }
 
-                val nodeIds = refreshNodesIfNeeded(appContext, false)
+                // Camino crítico: lectura no bloqueante del caché de nodos.
+                val nodeIds = getNodesOrEmpty()
                 if (nodeIds.isEmpty()) {
-                    Log.w(TAG, "No nodes connected")
+                    Log.w(TAG, "No nodes connected — triggering async refresh")
+                    refreshNodesAsync(appContext)
                     return@execute
                 }
 
+                // Si el caché está cerca de vencer, refrescamos en background
+                // proactivamente, sin bloquear este envío.
+                maybeRefreshNodesInBackground(appContext)
+
                 val bytes = payload.toByteArray(Charsets.UTF_8)
 
+                // Fire-and-forget: NO Tasks.await(). El executor queda libre
+                // inmediatamente para procesar el siguiente mensaje en cola.
                 for (nodeId in nodeIds) {
-                    Tasks.await(
-                        Wearable.getMessageClient(appContext)
-                            .sendMessage(nodeId, PATH, bytes)
-                    )
+                    Wearable.getMessageClient(appContext)
+                        .sendMessage(nodeId, PATH, bytes)
+                        .addOnFailureListener { e ->
+                            Log.e(TAG, "Send error to node=$nodeId", e)
+                            invalidateNodeCache()
+                            refreshNodesAsync(appContext)
+                        }
                 }
 
             } catch (e: Exception) {
-                Log.e(TAG, "Send error", e)
+                Log.e(TAG, "Send prepare error", e)
                 invalidateNodeCache()
             }
         }
@@ -167,27 +184,51 @@ object WearMessageSender {
         return counter.incrementAndGet() % interval == 0
     }
 
-    private fun refreshNodesIfNeeded(context: Context, force: Boolean): List<String> {
+    // -------------------------
+    // Node discovery (no bloqueante)
+    // -------------------------
+
+    /**
+     * Lectura inmediata del caché. Nunca bloquea el camino de envío.
+     * Si está vacío, el caller debe disparar refreshNodesAsync().
+     */
+    private fun getNodesOrEmpty(): List<String> = cachedNodeIds
+
+    /**
+     * Refresca el caché en background si está próximo a vencer.
+     * No bloquea el executor thread.
+     */
+    private fun maybeRefreshNodesInBackground(context: Context) {
         val now = System.currentTimeMillis()
-
-        if (!force &&
-            cachedNodeIds.isNotEmpty() &&
-            now - lastNodeRefreshMs < NODE_CACHE_TTL_MS
-        ) {
-            return cachedNodeIds
+        if (now - lastNodeRefreshMs >= NODE_CACHE_TTL_MS) {
+            refreshNodesAsync(context)
         }
+    }
 
-        val nodes = Tasks.await(Wearable.getNodeClient(context).connectedNodes)
-        cachedNodeIds = nodes.map { it.id }
-        lastNodeRefreshMs = now
+    /**
+     * Refresco asíncrono usando el API de callbacks de Wearable.
+     * No bloquea ningún hilo; el resultado se escribe al caché cuando llega.
+     * Flag nodeRefreshInFlight previene refrescos simultáneos redundantes.
+     */
+    private fun refreshNodesAsync(context: Context) {
+        if (nodeRefreshInFlight) return
+        nodeRefreshInFlight = true
 
-        return cachedNodeIds
+        Wearable.getNodeClient(context).connectedNodes
+            .addOnSuccessListener { nodes ->
+                cachedNodeIds = nodes.map { it.id }
+                lastNodeRefreshMs = System.currentTimeMillis()
+                nodeRefreshInFlight = false
+                Log.d(TAG, "Node cache refreshed: ${cachedNodeIds.size} node(s)")
+            }
+            .addOnFailureListener { e ->
+                nodeRefreshInFlight = false
+                Log.w(TAG, "Node refresh failed", e)
+            }
     }
 
     private fun invalidateNodeCache() {
         cachedNodeIds = emptyList()
         lastNodeRefreshMs = 0L
     }
-
-
 }

@@ -1,118 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.wear.widget.BoxInsetLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/locationGameplayRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black">
+    android:background="#001A00">
 
-    <ScrollView
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
+        <com.randomadjective.prototipodatalayer.sensors.fragments.gameplay.RadarView
+            android:id="@+id/radarView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:paddingTop="8dp">
 
             <TextView
-                android:id="@+id/tvTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Sensor: Location"
-                android:textColor="@android:color/white"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_gravity="center_horizontal"
-                android:paddingBottom="8dp" />
-
-            <Button
-                android:id="@+id/btnToggleViewMode"
+                android:id="@+id/tvRadarStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Vista: RAW" />
+                android:gravity="center"
+                android:text="Buscando ubicación..."
+                android:textColor="#B9FFB9"
+                android:textSize="10sp"
+                android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/tvPermission"
-                android:layout_width="wrap_content"
+                android:id="@+id/tvRadarHeading"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Permiso: desconocido"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:paddingTop="12dp" />
-
-            <TextView
-                android:id="@+id/tvStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Estado: INACTIVE"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:paddingTop="8dp" />
-
-            <TextView
-                android:id="@+id/tvLatitude"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Latitud: 0.0"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:paddingTop="8dp" />
-
-            <TextView
-                android:id="@+id/tvLongitude"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Longitud: 0.0"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:paddingTop="4dp" />
-
-            <TextView
-                android:id="@+id/tvAccuracy"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Precisión: 0.0"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:paddingTop="8dp" />
-
-            <TextView
-                android:id="@+id/tvSpeed"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Velocidad: 0.0"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:paddingTop="4dp" />
-
-            <TextView
-                android:id="@+id/tvAltitude"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Altitud: 0.0"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:paddingTop="4dp" />
-
-            <TextView
-                android:id="@+id/tvMovementLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Movimiento: Sin datos"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:paddingTop="8dp" />
-
-            <TextView
-                android:id="@+id/tvTimestamp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Última lectura: -"
-                android:textColor="@android:color/white"
-                android:textSize="12sp"
-                android:paddingTop="8dp" />
+                android:gravity="center"
+                android:text="Heading: -"
+                android:textColor="#B9FFB9"
+                android:textSize="10sp" />
 
         </LinearLayout>
-    </ScrollView>
+
+        <TextView
+            android:id="@+id/tvRadarZoom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:gravity="center"
+            android:paddingBottom="10dp"
+            android:text="Zoom: 10 m/celda"
+            android:textColor="#B9FFB9"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+    </FrameLayout>
 
 </androidx.wear.widget.BoxInsetLayout>

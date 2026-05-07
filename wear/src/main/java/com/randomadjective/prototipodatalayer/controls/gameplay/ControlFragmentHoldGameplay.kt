@@ -11,6 +11,7 @@ import android.widget.ImageView
 import com.randomadjective.prototipodatalayer.R
 import com.randomadjective.prototipodatalayer.base.BaseControlFragment
 import java.util.Locale
+import kotlin.math.abs
 
 class ControlFragmentHoldGameplay : BaseControlFragment(R.layout.fragment_gameplay_control_hold) {
 
@@ -27,8 +28,14 @@ class ControlFragmentHoldGameplay : BaseControlFragment(R.layout.fragment_gamepl
     private val incrementoPorSegundo = 40f
     private val decrementoPorSegundo = 20f
 
+    // Envío constante a ~60Hz (antes 30Hz).
     private var lastSentTime = 0L
-    private val sendIntervalMs = 33L
+    private val sendIntervalMs = 16L
+
+    // Dead-zone: evita mensajes redundantes cuando el valor varía muy poco.
+    // Rango [0, 1] → 0.005 ≈ 0.5% de resolución.
+    private var lastSentValue = Float.NaN
+    private val deltaThreshold = 0.005f
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -122,9 +129,20 @@ class ControlFragmentHoldGameplay : BaseControlFragment(R.layout.fragment_gamepl
     }
 
     private fun sendHoldMessage(value01: Float) {
+        // Dead-zone: si apenas cambió, no enviamos.
+        // Excepción: los extremos 0.0 y 1.0 siempre se envían (estados borde).
+        val isEdge = value01 == 0f || value01 == 1f
+        if (!isEdge && !lastSentValue.isNaN() &&
+            abs(value01 - lastSentValue) < deltaThreshold
+        ) {
+            return
+        }
+
         val now = System.currentTimeMillis()
         if (now - lastSentTime < sendIntervalMs) return
+
         lastSentTime = now
+        lastSentValue = value01
         sendHoldMessageImmediate(value01)
     }
 

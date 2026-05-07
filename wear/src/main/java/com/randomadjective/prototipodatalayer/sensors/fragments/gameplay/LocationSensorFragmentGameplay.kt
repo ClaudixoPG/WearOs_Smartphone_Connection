@@ -5,115 +5,176 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.randomadjective.prototipodatalayer.R
-import com.randomadjective.prototipodatalayer.sensors.models.LocationUiState
+import com.randomadjective.prototipodatalayer.sensors.models.RadarPOI
 import com.randomadjective.prototipodatalayer.sensors.models.SensorStatus
-import com.randomadjective.prototipodatalayer.sensors.models.ViewMode
 import com.randomadjective.prototipodatalayer.sensors.providers.LocationSensorProvider
-import java.text.SimpleDateFormat
-import java.util.Date
+import com.randomadjective.prototipodatalayer.sensors.providers.OrientationSensorProvider
 import java.util.Locale
 
 class LocationSensorFragmentGameplay : Fragment(R.layout.fragment_gameplay_sensor_location) {
 
-    private lateinit var btnToggleViewMode: Button
-    private lateinit var tvPermission: TextView
-    private lateinit var tvStatus: TextView
-    private lateinit var tvLatitude: TextView
-    private lateinit var tvLongitude: TextView
-    private lateinit var tvAccuracy: TextView
-    private lateinit var tvSpeed: TextView
-    private lateinit var tvAltitude: TextView
-    private lateinit var tvMovementLabel: TextView
-    private lateinit var tvTimestamp: TextView
+    private lateinit var radarView: RadarView
+    private lateinit var tvRadarStatus: TextView
+    private lateinit var tvRadarZoom: TextView
+    private lateinit var tvRadarHeading: TextView
 
     private lateinit var locationProvider: LocationSensorProvider
+    private lateinit var orientationProvider: OrientationSensorProvider
 
-    private var uiState = LocationUiState()
+    private var hasPermission: Boolean = false
+    private var currentStatus: SensorStatus = SensorStatus.INACTIVE
+
+    private val manualPOIs = listOf(
+        RadarPOI(
+            id = "poi_01",
+            name = "POI 1",
+            latitude = -35.4046086,
+            longitude = -71.6319017
+        ),
+        RadarPOI(
+            id = "poi_02",
+            name = "POI 2",
+            latitude = -35.4041761,
+            longitude = -71.6342183
+        ),
+        RadarPOI(
+            id = "poi_03",
+            name = "POI 3",
+            latitude =  -35.4041991,
+            longitude = -71.6320264
+        )
+    )
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                     permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
 
-            uiState = uiState.copy(hasPermission = granted)
-            render()
+            hasPermission = granted
 
             if (granted) {
+                updateStatusText("Buscando ubicación...")
                 locationProvider.start()
             } else {
-                uiState = uiState.copy(status = SensorStatus.ERROR)
-                render()
+                currentStatus = SensorStatus.ERROR
+                updateStatusText("Permiso de ubicación denegado")
             }
         }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        btnToggleViewMode = view.findViewById(R.id.btnToggleViewMode)
-        tvPermission = view.findViewById(R.id.tvPermission)
-        tvStatus = view.findViewById(R.id.tvStatus)
-        tvLatitude = view.findViewById(R.id.tvLatitude)
-        tvLongitude = view.findViewById(R.id.tvLongitude)
-        tvAccuracy = view.findViewById(R.id.tvAccuracy)
-        tvSpeed = view.findViewById(R.id.tvSpeed)
-        tvAltitude = view.findViewById(R.id.tvAltitude)
-        tvMovementLabel = view.findViewById(R.id.tvMovementLabel)
-        tvTimestamp = view.findViewById(R.id.tvTimestamp)
+        radarView = view.findViewById(R.id.radarView)
+        tvRadarStatus = view.findViewById(R.id.tvRadarStatus)
+        tvRadarZoom = view.findViewById(R.id.tvRadarZoom)
+        tvRadarHeading = view.findViewById(R.id.tvRadarHeading)
 
-        locationProvider = LocationSensorProvider(
-            context = requireContext(),
-            onStatusChanged = { status ->
-                uiState = uiState.copy(status = status)
-                render()
-            },
-            onPermissionChanged = { granted ->
-                uiState = uiState.copy(hasPermission = granted)
-                render()
-            },
-            onLocationChanged = { latitude, longitude, accuracy, speed, altitude, timestamp ->
-                uiState = uiState.copy(
-                    latitude = latitude,
-                    longitude = longitude,
-                    accuracy = accuracy,
-                    speed = speed,
-                    altitude = altitude,
-                    movementLabel = calculateMovementLabel(speed),
-                    lastUpdateTimestamp = timestamp
-                )
-                render()
-            }
-        )
+        setupRadarView()
+        setupLocationProvider()
+        setupOrientationProvider()
 
-        btnToggleViewMode.setOnClickListener {
-            uiState = uiState.copy(
-                viewMode = if (uiState.viewMode == ViewMode.RAW) {
-                    ViewMode.PROCESSED
-                } else {
-                    ViewMode.RAW
-                }
-            )
-            render()
-        }
-
-        render()
+        updateStatusText("Buscando ubicación...")
+        updateZoomText()
+        updateHeadingText(null)
     }
 
     override fun onResume() {
         super.onResume()
+
+        orientationProvider.start()
+
         if (hasLocationPermission()) {
+            hasPermission = true
+            updateStatusText("Buscando ubicación...")
             locationProvider.start()
         } else {
+            hasPermission = false
             requestLocationPermission()
         }
     }
 
     override fun onPause() {
         super.onPause()
-        locationProvider.stop()
+
+        if (::locationProvider.isInitialized) {
+            locationProvider.stop()
+        }
+
+        if (::orientationProvider.isInitialized) {
+            orientationProvider.stop()
+        }
+    }
+
+    private fun setupRadarView() {
+        radarView.setPOIs(manualPOIs)
+
+        radarView.setCallbacks(
+            onZoomChanged = {
+                updateZoomText()
+            },
+            onStatusChanged = { message ->
+                updateStatusText(message)
+            },
+            onPoiFound = { poi ->
+                updateStatusText("POI encontrado: ${poi.name}")
+
+                // Después conectamos esto con Unity/smartphone:
+                // sendMessage("POI_FOUND:${poi.id}")
+            }
+        )
+    }
+
+    private fun setupLocationProvider() {
+        locationProvider = LocationSensorProvider(
+            context = requireContext(),
+            onStatusChanged = { status ->
+                currentStatus = status
+
+                when (status) {
+                    SensorStatus.ACTIVE -> updateStatusText("Radar activo")
+                    SensorStatus.INACTIVE -> updateStatusText("Radar inactivo")
+                    SensorStatus.ERROR -> updateStatusText("Error de ubicación")
+                    SensorStatus.NOT_AVAILABLE -> updateStatusText("Ubicación no disponible")
+                }
+            },
+            onPermissionChanged = { granted ->
+                hasPermission = granted
+
+                if (!granted) {
+                    updateStatusText("Permiso de ubicación denegado")
+                }
+            },
+            onLocationChanged = { latitude, longitude, accuracy, speed, altitude, timestamp ->
+                radarView.updateUserLocation(
+                    latitude = latitude,
+                    longitude = longitude,
+                    accuracy = accuracy
+                )
+
+                updateStatusText(
+                    "GPS activo | ±${String.format(Locale.US, "%.1f", accuracy)} m"
+                )
+            }
+        )
+    }
+
+    private fun setupOrientationProvider() {
+        orientationProvider = OrientationSensorProvider(
+            context = requireContext(),
+            onHeadingChanged = { heading ->
+                radarView.updateHeading(heading)
+                updateHeadingText(heading)
+            },
+            onAvailabilityChanged = { available ->
+                if (!available) {
+                    updateHeadingText(null)
+                    updateStatusText("Orientación no disponible")
+                }
+            }
+        )
     }
 
     private fun hasLocationPermission(): Boolean {
@@ -139,66 +200,36 @@ class LocationSensorFragmentGameplay : Fragment(R.layout.fragment_gameplay_senso
         )
     }
 
-    private fun render() {
-        btnToggleViewMode.text = "Vista: ${uiState.viewMode.name}"
-        tvPermission.text = "Permiso: ${if (uiState.hasPermission) "GRANTED" else "DENIED"}"
-        tvStatus.text = "Estado: ${uiState.status.name}"
+    private fun updateStatusText(message: String) {
+        if (!::tvRadarStatus.isInitialized) return
 
-        tvPermission.setTextColor(if (uiState.hasPermission) Color.GREEN else Color.RED)
+        tvRadarStatus.text = message
 
-        when (uiState.status) {
-            SensorStatus.ACTIVE -> tvStatus.setTextColor(Color.GREEN)
-            SensorStatus.ERROR,
-            SensorStatus.NOT_AVAILABLE -> tvStatus.setTextColor(Color.RED)
-            else -> tvStatus.setTextColor(Color.WHITE)
-        }
-
-        when (uiState.viewMode) {
-            ViewMode.RAW -> {
-                tvLatitude.visibility = View.VISIBLE
-                tvLongitude.visibility = View.VISIBLE
-                tvAltitude.visibility = View.VISIBLE
-
-                tvLatitude.text = "Latitud: ${formatDouble(uiState.latitude)}"
-                tvLongitude.text = "Longitud: ${formatDouble(uiState.longitude)}"
-                tvAccuracy.text = "Precisión: ${formatFloat(uiState.accuracy)} m"
-                tvSpeed.text = "Velocidad: ${formatFloat(uiState.speed)} m/s"
-                tvAltitude.text = "Altitud: ${formatDouble(uiState.altitude)} m"
-                tvMovementLabel.text = "Movimiento: ${uiState.movementLabel}"
+        tvRadarStatus.setTextColor(
+            when {
+                message.contains("encontrado", ignoreCase = true) -> Color.YELLOW
+                message.contains("error", ignoreCase = true) -> Color.RED
+                message.contains("denegado", ignoreCase = true) -> Color.RED
+                message.contains("no disponible", ignoreCase = true) -> Color.RED
+                message.contains("activo", ignoreCase = true) -> Color.rgb(185, 255, 185)
+                else -> Color.WHITE
             }
+        )
+    }
 
-            ViewMode.PROCESSED -> {
-                tvLatitude.visibility = View.GONE
-                tvLongitude.visibility = View.GONE
-                tvAltitude.visibility = View.GONE
+    private fun updateZoomText() {
+        if (!::tvRadarZoom.isInitialized) return
 
-                tvAccuracy.text = "Precisión: ${formatFloat(uiState.accuracy)} m"
-                tvSpeed.text = "Velocidad: ${formatFloat(uiState.speed)} m/s"
-                tvMovementLabel.text = "Movimiento: ${uiState.movementLabel}"
-            }
+        tvRadarZoom.text = "Zoom: ${radarView.getCurrentZoom().label}"
+    }
+
+    private fun updateHeadingText(heading: Float?) {
+        if (!::tvRadarHeading.isInitialized) return
+
+        tvRadarHeading.text = if (heading == null) {
+            "Heading: -"
+        } else {
+            "Heading: ${heading.toInt()}°"
         }
-
-        tvTimestamp.text = "Última lectura: ${formatTimestamp(uiState.lastUpdateTimestamp)}"
-    }
-
-    private fun calculateMovementLabel(speed: Float): String {
-        return when {
-            speed < 0.3f -> "Quieto"
-            speed < 1.5f -> "Desplazamiento leve"
-            else -> "En movimiento"
-        }
-    }
-
-    private fun formatFloat(value: Float): String {
-        return String.format(Locale.US, "%.2f", value)
-    }
-
-    private fun formatDouble(value: Double): String {
-        return String.format(Locale.US, "%.6f", value)
-    }
-
-    private fun formatTimestamp(timestamp: Long): String {
-        if (timestamp <= 0L) return "-"
-        return SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(timestamp))
     }
 }

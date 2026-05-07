@@ -14,11 +14,19 @@ import android.widget.TextView
 import com.randomadjective.prototipodatalayer.R
 import com.randomadjective.prototipodatalayer.base.BaseControlFragment
 import java.util.Locale
+import kotlin.math.abs
 
 class ControlFragmentJoystickGameplay : BaseControlFragment(R.layout.fragment_gameplay_control_joystick) {
 
+    // Envío constante a ~60Hz (antes era 30Hz → duplicamos el rate).
     private var lastSentTime = 0L
-    private val sendIntervalMs = 33L
+    private val sendIntervalMs = 16L
+
+    // Dead-zone: evita reenviar valores casi idénticos.
+    // Rango normalizado [-1, 1] → 0.01 ≈ 0.5% de resolución.
+    private var lastSentX = Float.NaN
+    private var lastSentY = Float.NaN
+    private val deltaThreshold = 0.01f
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -85,6 +93,10 @@ class ControlFragmentJoystickGameplay : BaseControlFragment(R.layout.fragment_ga
                     animX.start()
                     animY.start()
 
+                    // Reset del tracking al soltar, el release siempre viaja.
+                    lastSentX = Float.NaN
+                    lastSentY = Float.NaN
+                    lastSentTime = 0L
                     sendMessage("JoystickRelease:0.00,0.00")
                 }
             }
@@ -93,13 +105,23 @@ class ControlFragmentJoystickGameplay : BaseControlFragment(R.layout.fragment_ga
     }
 
     private fun sendJoystickMessage(x: Float, y: Float) {
+        val xClamped = x.coerceIn(-1f, 1f)
+        val yClamped = y.coerceIn(-1f, 1f)
+
+        // Dead-zone: si apenas cambió, no gastamos un paquete.
+        if (!lastSentX.isNaN() && !lastSentY.isNaN() &&
+            abs(xClamped - lastSentX) < deltaThreshold &&
+            abs(yClamped - lastSentY) < deltaThreshold
+        ) {
+            return
+        }
+
         val now = System.currentTimeMillis()
         if (now - lastSentTime < sendIntervalMs) return
 
         lastSentTime = now
-
-        val xClamped = x.coerceIn(-1f, 1f)
-        val yClamped = y.coerceIn(-1f, 1f)
+        lastSentX = xClamped
+        lastSentY = yClamped
 
         val message = String.format(Locale.US, "Joystick:%.2f,%.2f", xClamped, yClamped)
         sendMessage(message)
